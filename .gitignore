@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Environment variables
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE / Editor
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Front-end / Build
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# dist/ # Uncomment if you don't want to commit build artifacts
+
+# Vercel
+.vercel/
+
+# User assets (Screenshots for README)
+# assets/ # Keep assets for README images
