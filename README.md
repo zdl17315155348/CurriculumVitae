@@ -6,9 +6,9 @@
 
 | 编辑界面 | 实时预览 |
 | --- | --- |
-| <img src="assets/editor.svg" alt="简历编辑器界面" width="400"/> | <img src="assets/preview.svg" alt="简历实时预览界面" width="400"/> |
+| <img src="https://placehold.co/800x600/f0f0f0/333333?text=Editor+Interface" alt="简历编辑器界面" width="400"/> | <img src="https://placehold.co/800x600/e0e0e0/333333?text=Resume+Preview" alt="简历实时预览界面" width="400"/> |
 
-> **提示**：为了展示真实效果，建议您将界面截图保存到 `assets/` 目录下，并分别命名为 `editor.png` 和 `preview.png`，然后修改上方链接后缀为 `.png`。
+> **提示**：为了展示真实效果，请将您的界面截图保存到 `assets/` 目录下，分别命名为 `editor.png` 和 `preview.png`，并将上方图片链接修改为 `assets/editor.png` 和 `assets/preview.png`。
 
 ## ✨ 核心特性
 
