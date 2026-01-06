@@ -2,6 +2,12 @@
 
 这是一个基于 Vue.js (前端) 和 Django (后端) 的现代化个人简历生成器。支持所见即所得的编辑体验、高度自定义的模块管理、响应式布局以及高质量的 PDF 导出功能。
 
+## 📸 界面预览
+
+| 编辑界面 | 实时预览 |
+| --- | --- |
+| <img src="https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=A%20screenshot%20of%20a%20modern%20web-based%20resume%20editor%20interface.%20On%20the%20top%20left%2C%20it%20says%20%22%E7%AE%80%E5%8E%86%E7%BC%96%E8%BE%91%E5%99%A8%22%20(Resume%20Editor)%20in%20bold%20black.%20Top%20right%20has%20blue%20action%20links%20with%20plus%20icons%20for%20%22Custom%20Module%22%20and%20%22Custom%20Config%22.%20Below%20is%20a%20horizontal%20tab%20bar%20with%20%22Basic%20Info%22%20active%20(blue%20underline).%20The%20main%20content%20area%20shows%20a%20form%20for%20basic%20information%3A%20a%20centered%20gray%20avatar%20placeholder%20with%20upload%2Fremove%20buttons%2C%20followed%20by%20a%20grid%20of%20input%20fields%20(Name%2C%20Phone%2C%20Email%2C%20Gender)%20with%20icons.%20Bottom%20bar%20shows%20save%20status%20and%20a%20blue%20%22Save%22%20button.%20Clean%2C%20white%20background%2C%20modern%20UI%20style.&image_size=square_hd" alt="简历编辑器界面" width="400"/> | <img src="https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=A%20screenshot%20of%20a%20digital%20resume%20preview%20page.%20The%20layout%20mimics%20an%20A4%20paper%20on%20a%20light%20gray%20background.%20At%20the%20top%2C%20a%20centered%20name%20%22%E5%BC%A0%E4%B8%89%22%20(Zhang%20San)%20in%20large%20bold%20text%2C%20followed%20by%20small%20gray%20personal%20details%20and%20contact%20info.%20Below%20are%20sections%20with%20blue%20headers%3A%20%22Education%22%2C%20%22Internship%22%2C%20%22Projects%22.%20Content%20is%20structured%20cleanly%20with%20black%20text%20and%20right-aligned%20dates.%20Bottom%20right%20has%20floating%20action%20buttons%20for%20%22Edit%22%20and%20%22Export%20PDF%22.%20Professional%20and%20minimalist%20design.&image_size=square_hd" alt="简历实时预览界面" width="400"/> |
+
 ## ✨ 核心特性
 
 - **所见即所得 (WYSIWYG)**：左侧编辑面板，右侧 A4 纸张实时预览，修改即刻生效。
