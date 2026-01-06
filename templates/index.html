@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人简历生成器</title>
+    <script src="static/js/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <script>
+        // 本地备份加载（如果 CDN 失败）
+        if (typeof html2pdf === 'undefined') {
+            document.write('<script src="static/js/html2pdf.bundle.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 0; }
+        
+        /* Top Navigation Bar */
+        .top-nav {
+            background: white;
+            padding: 0 40px;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            color: #1890ff;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .logo i { margin-right: 10px; font-size: 24px; }
+        .nav-items {
+            display: flex;
+            gap: 20px;
+            color: #333;
+        }
+        .nav-item { cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .nav-item:hover { color: #1890ff; }
+
+        /* Main Container */
+        .main-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px 20px;
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 100px);
+        }
+
+        /* Editor Panel (Left) */
+        .editor-panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .editor-header-row {
+            padding: 20px 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .editor-title { font-size: 18px; font-weight: bold; color: #333; }
+        .editor-actions { display: flex; gap: 15px; color: #1890ff; font-size: 14px; cursor: pointer; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            padding: 0 20px;
+            border-bottom: 1px solid #eee;
+            margin-top: 15px;
+            overflow-x: auto;
+        }
+        .tab-item {
+            padding: 12px 0;
+            margin-right: 25px;
+            cursor: pointer;
+            color: #333;
+            font-size: 14px;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab-item.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+            font-weight: bold;
+        }
+        
+        /* Editor Content Area */
+        .editor-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* Preview Panel (Right) */
+        .preview-panel {
+            flex: 1.2;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .preview-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .preview-title { font-weight: bold; color: #333; }
+        .preview-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            background: #e8eaec; /* 灰色背景衬托A4纸 */
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* A4 Paper Style */
+        .resume-paper {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            padding: 40px; /* 页边距 */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        
+        /* Bottom Bars */
+        .editor-bottom {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+        }
+        .preview-bottom {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background: white;
+        }
+        
+        /* Buttons */
+        .btn-save { background: #1890ff; color: white; padding: 8px 24px; border-radius: 4px; }
+        .btn-outline { border: 1px solid #ddd; background: white; color: #666; padding: 8px 20px; border-radius: 4px; }
+        .btn-export { background: #1890ff; color: white; padding: 8px 20px; border-radius: 4px; }
+        
+        /* Override old styles */
+        .container { max-width: none; margin: 0; display: flex; gap: 0; }
+        .editor { display: none; } /* Hide old editor class */
+        
+        /* Quill Override */
+        .ql-toolbar { 
+            border: 1px solid #d9d9d9 !important; 
+            border-bottom: none !important; 
+            background: #fff !important; 
+            border-radius: 4px 4px 0 0;
+            padding: 8px !important;
+        }
+        .ql-container { 
+            border: 1px solid #d9d9d9 !important; 
+            border-radius: 0 0 4px 4px; 
+            height: 300px; 
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', monospace; /* 模拟代码风格字体 */
+        }
+        .ql-editor {
+            line-height: 1.8;
+            color: #333;
+        }
+        
+        /* Resume Content Styles */
+        .resume-section h3 {
+            color: #1890ff;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .resume-item-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+        .resume-item-subtitle {
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .resume-desc {
+            font-size: 14px;
+            line-height: 1.8; /* Match preview card */
+            color: #333;
+        }
+        .resume-desc ul { 
+            padding-left: 20px; 
+            margin: 0; /* Match preview card */
+        }
+        .resume-desc li { 
+            margin-bottom: 0; /* Tighten up list items */
+        }
+        .resume-desc p {
+            margin: 0 0 10px 0;
+        }
+
+        /* Floating Chat Button */
+        .floating-chat {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: #52c41a;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+
+        /* 导出 PDF 样式 */
+        body.exporting .main-wrapper { display: none; }
+        body.exporting .resume-paper {
+            margin: 0;
+            box-shadow: none;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20px; /* 导出时边距 */
+        }
+        
+        /* Module Title with Icon */
+        .module-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 18px;
+        }
+        .module-header i { color: #1890ff; margin-right: 10px; font-size: 20px; vertical-align: middle; }
+        .module-desc { color: #666; font-size: 14px; margin-bottom: 25px; margin-left: 30px; }
+        
+        /* Avatar Upload Section */
+        .avatar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #eee;
+            margin-bottom: 10px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+            font-size: 40px;
+        }
+        .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-tip { font-size: 12px; color: #999; margin-bottom: 15px; }
+        .avatar-actions { display: flex; gap: 15px; }
+        
+        /* Grid Form Layout */
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-col { flex: 1; }
+        
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; color: #333; }
+        label.required::before { content: '* '; color: #ff4d4f; }
+        
+                /* Input with Icon */
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #999; }
+        .input-wrapper input, .input-wrapper select { 
+            padding-left: 35px; 
+            height: 40px; 
+            border: 1px solid #d9d9d9; 
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: all 0.3s;
+            appearance: none;
+        }
+        .input-wrapper input:focus, .input-wrapper select:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,0.2); outline: none; }
+        .input-wrapper.select-wrapper::after {
+            content: '\f078';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 12px;
+            pointer-events: none;
+        }
+        .input-wrapper.select-wrapper i { left: 12px; } /* Reset icon position */
+        .input-wrapper.select-wrapper select { padding-left: 35px; } /* Ensure padding */
+        
+        /* Select without icon (if needed) */
+        .input-wrapper.select-wrapper.no-icon select { padding-left: 12px; }
+
+        /* Custom Editor Styles */
+        .skills-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .skill-preview-card {
+            background: #f9f9f9;
+            border: 1px dashed #d9d9d9;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 13px;
+        }
+        .skill-preview-title {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .editor-container {
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .editor-container:focus-within {
+            border-color: #1890ff;
+            box-shadow: 0 0 0 3px rgba(24,144,255,0.1);
+        }
+        
+        .custom-editor-toolbar {
+            background: #f5f7fa;
+            border-bottom: 1px solid #eee;
+            padding: 8px 12px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .toolbar-group {
+            display: flex;
+            gap: 2px;
+            padding-right: 10px;
+            border-right: 1px solid #e8e8e8;
+            margin-right: 10px;
+        }
+        .toolbar-group:last-child { border: none; }
+        
+        .toolbar-btn {
+            cursor: pointer;
+            color: #555;
+            padding: 6px 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .toolbar-btn:hover {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .custom-textarea {
+            width: 100%;
+            min-height: 350px;
+            border: none;
+            padding: 15px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+            line-height: 1.7;
+            color: #333;
+            resize: vertical;
+            outline: none;
+            box-sizing: border-box;
+            background: white;
+        }
+
+        /* Education Card Styles */
+        .edu-card {
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        .edu-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-color: #1890ff;
+        }
+        .edu-info {
+            flex: 1;
+        }
+        .edu-school {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .edu-tags {
+            display: flex;
+            gap: 10px;
+        }
+        .tag-blue {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tag-orange {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+        .edu-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #999;
+            font-size: 13px;
+        }
+        .action-btn {
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .action-btn.edit:hover { color: #1890ff; }
+        .action-btn.delete:hover { color: #ff4d4f; }
+        
+        /* Edit Form Styles */
+        .edit-form-card {
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+        /* Modal Styles Updated - Slide from Left */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3); /* 更轻的遮罩 */
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-card {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 800px; /* 改回 800px 宽度 */
+            height: 100vh;
+            max-width: 90vw;
+            max-height: none;
+            border-radius: 0;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            box-shadow: 4px 0 16px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-overlay.active .modal-card {
+            transform: translateX(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            margin: 0;
+            background: #fff;
+        }
+        .modal-title { font-size: 18px; font-weight: bold; color: #333; display: flex; align-items: center; gap: 10px; }
+        
+        .config-tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            padding: 0 20px;
+            background: white;
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+        .config-tab {
+            padding: 15px 0;
+            margin-right: 25px;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .config-tab.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+            font-weight: bold;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fcfcfc;
+        }
+
+        /* 紧凑版模块列表 */
+        .module-list-enhanced {
+            gap: 12px;
+        }
+        .module-item-enhanced {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            transition: all 0.2s;
+        }
+        .module-item-enhanced:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-color: #e6f7ff;
+        }
+        .module-item-enhanced.dragging {
+            opacity: 0.5;
+            background: #f0f0f0;
+            border: 1px dashed #999;
+        }
+        .module-item-enhanced.drag-over {
+            border-top: 2px solid #1890ff;
+        }
+        .drag-handle { color: #ccc; margin-right: 15px; cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
+        .module-info { display: flex; align-items: center; font-size: 14px; }
+        .module-icon { width: 20px; color: #1890ff; margin-right: 10px; text-align: center; }
+        
+        .module-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .module-toggle.active {
+            color: #52c41a; /* 绿色文字 */
+            background: none;
+            border: none;
+        }
+        .module-toggle.inactive {
+            color: #999; /* 灰色文字 */
+            background: none;
+            border: none;
+        }
+        
+        /* Checkbox Styles */
+        .checkbox-wrapper {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            margin-right: 4px;
+            transition: all 0.2s;
+        }
+        .active .checkbox-wrapper { 
+            background: #1890ff; 
+            border: 1px solid #1890ff;
+            color: white; 
+        }
+        .inactive .checkbox-wrapper { 
+            background: white; 
+            border: 1px solid #ccc; 
+        }
+
+        /* Eye Icon Styles */
+        .eye-icon {
+            font-size: 14px;
+            margin-right: 4px;
+        }
+        .active .eye-icon { color: #52c41a; }
+        .inactive .eye-icon { color: #ccc; }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            background: white;
+            display: flex;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    {% verbatim %}
+    <div id="app" class="main-wrapper">
+        <!-- Editor Panel -->
+        <div class="editor-panel">
+            <div class="editor-header-row">
+                <div class="editor-title">简历编辑器</div>
+                <div class="editor-actions">
+                    <span><i class="fas fa-plus"></i> 自定义简历模块</span>
+                    <span @click="openConfigModal"><i class="fas fa-pen"></i> 自定义简历配置</span>
+                </div>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab-item" :class="{ active: currentTab === 'basic' }" @click="currentTab = 'basic'">基本信息</div>
+                <div class="tab-item" :class="{ active: currentTab === 'projects' }" @click="currentTab = 'projects'">项目经历</div>
+                <div class="tab-item" :class="{ active: currentTab === 'skills' }" @click="currentTab = 'skills'">专业技能</div>
+                <div class="tab-item" :class="{ active: currentTab === 'experience' }" @click="currentTab = 'experience'">实习经历</div>
+                <div class="tab-item" :class="{ active: currentTab === 'work' }" @click="currentTab = 'work'">工作经历</div>
+                <div class="tab-item" :class="{ active: currentTab === 'education' }" @click="currentTab = 'education'">教育背景</div>
+            </div>
+
+            <div class="editor-content">
+                <!-- Basic Info -->
+                <div v-show="currentTab === 'basic'">
+                    <div class="module-header"><i class="fas fa-user"></i> <span>基本信息</span></div>
+                    <div class="module-desc">填写您的基本个人信息，这些信息将显示在简历的顶部区域。</div>
+                    
+                    <div class="avatar-section">
+                        <div class="avatar-preview">
+                            <img v-if="resume.avatar" :src="resume.avatar">
+                            <i v-else class="fas fa-user"></i>
+                        </div>
+                        <div class="avatar-tip">支持 JPG、PNG、JPEG 格式，大小不超过 1 MB</div>
+                        <div class="avatar-actions">
+                            <button class="btn-primary" @click="triggerUpload" style="padding: 6px 15px; font-size: 13px;">
+                                <i class="fas fa-upload"></i> 上传头像
+                            </button>
+                            <input type="file" id="avatar-upload" @change="handleAvatarUpload" style="display: none" accept="image/*">
+                            <button class="btn-outline" @click="removeAvatar" style="padding: 6px 15px; font-size: 13px; color: #ff4d4f; border-color: #ff4d4f;">
+                                <i class="fas fa-times-circle"></i> 移除头像
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label class="required">姓名</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user"></i>
+                                <input v-model="resume.name" placeholder="请输入姓名">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <label class="required">电话</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-phone-alt"></i>
+                                <input v-model="resume.phone" placeholder="请输入电话号码">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label class="required">邮箱</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-envelope"></i>
+                                <input v-model="resume.email" placeholder="email@example.com">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <label>性别</label>
+                            <div class="input-wrapper select-wrapper no-icon">
+                                <select v-model="resume.gender">
+                                    <option value="" disabled selected>请选择性别</option>
+                                    <option value="男">男</option>
+                                    <option value="女">女</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>年龄</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-id-card"></i>
+                                <input v-model="resume.age" placeholder="例如: 23">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <label>个人博客</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-link"></i>
+                                <input v-model="resume.blog" placeholder="例如: https://yourblog.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Github</label>
+                            <div class="input-wrapper">
+                                <i class="fab fa-github"></i>
+                                <input v-model="resume.github" placeholder="例如: https://github.com/yourname">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <label>求职意向</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-tag"></i>
+                                <input v-model="resume.jobIntention" placeholder="例如: 前端工程师">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>政治面貌</label>
+                            <div class="input-wrapper select-wrapper no-icon">
+                                <select v-model="resume.politicalStatus">
+                                    <option value="" disabled selected>请选择</option>
+                                    <option value="中共党员">中共党员</option>
+                                    <option value="共青团员">共青团员</option>
+                                    <option value="群众">群众</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <label>地址</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <input v-model="resume.location" placeholder="例如: 上海市">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects -->
+                <div v-show="currentTab === 'projects'">
+                    <div class="module-header"><i class="fas fa-project-diagram"></i> <span>项目经历</span></div>
+                    <div class="module-desc">填写您参与的项目经历，包括项目名称、角色和具体贡献。可通过拖拽进行排序。</div>
+
+                    <!-- List of Projects -->
+                    <div v-for="(proj, index) in resume.projects" :key="index" class="edu-card">
+                         <div class="edu-info">
+                             <div class="edu-school" style="font-size: 16px;">{{ proj.name }}</div>
+                             <div class="edu-tags">
+                                 <div class="tag-blue"><i class="fas fa-user"></i> {{ proj.role }}</div>
+                             </div>
+                         </div>
+                         <div class="edu-actions">
+                             <div style="margin-right: 15px; color: #999;"><i class="far fa-calendar-alt"></i> {{ proj.duration }}</div>
+                             <div class="action-btn edit" @click="editProject(index)"><i class="fas fa-pencil-alt"></i></div>
+                             <div class="action-btn delete" @click="removeProject(index)"><i class="far fa-trash-alt"></i></div>
+                         </div>
+                    </div>
+
+                    <!-- Separator / Add Header -->
+                    <div style="margin-top: 30px; margin-bottom: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="form-title" style="font-size: 16px; font-weight: bold;">
+                                {{ editingProjectIndex === -1 ? '添加项目经历' : '编辑项目经历' }}
+                            </div>
+                            <div style="color: #1890ff; cursor: pointer; font-size: 14px;" @click="resetProjectForm">
+                                <i class="fas fa-plus"></i> 添加新的项目经历
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form -->
+                    <div class="edit-form-card" style="border: none; padding: 0; box-shadow: none;">
+                        <!-- Row 1: Name & Role -->
+                        <div class="form-row">
+                             <div class="form-col">
+                                 <label class="required">项目名称</label>
+                                 <div class="input-wrapper">
+                                     <i class="fas fa-th-large"></i>
+                                     <input v-model="currentProject.name" placeholder="例如：企业官网重构">
+                                 </div>
+                             </div>
+                             <div class="form-col">
+                                 <label class="required">担任角色</label>
+                                 <div class="input-wrapper">
+                                     <i class="fas fa-user"></i>
+                                     <input v-model="currentProject.role" placeholder="例如：前端开发工程师">
+                                 </div>
+                             </div>
+                        </div>
+                        
+                        <!-- Row 2: Time -->
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label class="required">项目时间</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="input-wrapper" style="flex: 1;">
+                                        <input v-model="currentProject.startDate" placeholder="开始时间">
+                                    </div>
+                                    <span style="color: #999;">→</span>
+                                    <div class="input-wrapper" style="flex: 1;">
+                                        <input v-model="currentProject.endDate" placeholder="结束时间 (未结束可不选)">
+                                        <i class="far fa-calendar-alt" style="left: auto; right: 10px;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Description -->
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label class="required">项目描述</label>
+                                <div class="editor-container">
+                                    <!-- Toolbar -->
+                                    <div class="custom-editor-toolbar">
+                                        <div class="toolbar-group">
+                                            <div class="toolbar-btn" @click="insertText('**', '**', 'proj-desc', v => currentProject.description = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                            <div class="toolbar-btn" @click="insertText('*', '*', 'proj-desc', v => currentProject.description = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                                        </div>
+                                        <div class="toolbar-group">
+                                            <div class="toolbar-btn" @click="insertText('- ', '', 'proj-desc', v => currentProject.description = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                            <div class="toolbar-btn" @click="insertText('1. ', '', 'proj-desc', v => currentProject.description = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                                        </div>
+                                        <div style="margin-left: auto; font-size: 12px; color: #999;">
+                                            <i class="fab fa-markdown"></i> Markdown
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Textarea -->
+                                    <textarea 
+                                        id="proj-desc"
+                                        class="custom-textarea" 
+                                        style="min-height: 200px;"
+                                        v-model="currentProject.description" 
+                                        placeholder="- 实现了论坛系统，功能包含XXX、XXX..."
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add/Update Button -->
+                        <button class="btn-save" @click="saveProjectItem" style="width: 100%; margin-top: 10px;">
+                            <i class="fas fa-check"></i> {{ editingProjectIndex === -1 ? '确认添加' : '确认修改' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div v-if="currentTab === 'skills'" class="skills-wrapper">
+                    <!-- Preview Card -->
+                    <div class="skill-preview-card">
+                        <div class="skill-preview-title">
+                            <span><i class="far fa-eye" style="margin-right: 5px; color: #1890ff;"></i> 实时预览</span>
+                            <span style="font-weight: normal; font-size: 12px; color: #999;">支持 Markdown 语法</span>
+                        </div>
+                        <div class="resume-desc" v-html="compiledMarkdown"></div>
+                    </div>
+
+                    <!-- Editor -->
+                    <div class="editor-container">
+                        <!-- Toolbar -->
+                        <div class="custom-editor-toolbar">
+                            <div class="toolbar-group">
+                                <div class="toolbar-btn" @click="insertText('**', '**', 'skill-textarea', v => resume.summary = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                <div class="toolbar-btn" @click="insertText('*', '*', 'skill-textarea', v => resume.summary = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                            </div>
+                            <div class="toolbar-group">
+                                <div class="toolbar-btn" @click="insertText('- ', '', 'skill-textarea', v => resume.summary = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                <div class="toolbar-btn" @click="insertText('1. ', '', 'skill-textarea', v => resume.summary = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                            </div>
+                            <div style="margin-left: auto; font-size: 12px; color: #999;">
+                                <i class="fab fa-markdown"></i> Markdown
+                            </div>
+                        </div>
+                        
+                        <!-- Textarea -->
+                        <textarea 
+                            id="skill-textarea" 
+                            class="custom-textarea" 
+                            v-model="resume.summary" 
+                            placeholder="- 熟练掌握 Java、Python 等编程语言..."
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- Experience -->
+                <div v-show="currentTab === 'experience'">
+                    <div class="module-header"><i class="fas fa-briefcase"></i> <span>实习经历</span></div>
+                    <div class="module-desc">请填写您的相关实习经历，这将展示您的职业发展轨迹。</div>
+                    
+                    <div v-for="(job, index) in resume.experience" :key="index" style="margin-bottom: 20px; border: 1px solid #e8e8e8; padding: 20px; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <div class="form-row" style="margin-bottom: 15px;">
+                            <div class="form-col" style="flex: 2;">
+                                <div class="input-wrapper">
+                                    <i class="far fa-building"></i>
+                                    <input v-model="job.company" placeholder="例如：某科技公司">
+                                </div>
+                            </div>
+                            <div class="form-col" style="flex: 1;">
+                                <div class="input-wrapper">
+                                    <i class="far fa-calendar-alt"></i>
+                                    <input v-model="job.duration" placeholder="例如：2021.06 - 2022.08">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="input-wrapper" style="margin-bottom: 15px;">
+                            <i class="far fa-id-card"></i>
+                            <input v-model="job.position" placeholder="例如：高级前端工程师">
+                        </div>
+                        
+                        <div class="editor-container" style="margin-bottom: 15px;">
+                            <!-- Toolbar -->
+                            <div class="custom-editor-toolbar">
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('**', '**', 'exp-desc-' + index, v => job.description = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('*', '*', 'exp-desc-' + index, v => job.description = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                                </div>
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('- ', '', 'exp-desc-' + index, v => job.description = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('1. ', '', 'exp-desc-' + index, v => job.description = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                                </div>
+                                <div style="margin-left: auto; font-size: 12px; color: #999;">
+                                    <i class="fab fa-markdown"></i> Markdown
+                                </div>
+                            </div>
+                            
+                            <!-- Textarea -->
+                            <textarea 
+                                :id="'exp-desc-' + index"
+                                class="custom-textarea" 
+                                style="min-height: 200px;"
+                                v-model="job.description" 
+                                placeholder="- 负责模块开发..."
+                            ></textarea>
+                        </div>
+                        
+                        <button class="btn-outline" @click="removeExperience(index)" style="width: 100%; border-color: #ff4d4f; color: #ff4d4f;">
+                            <i class="far fa-trash-alt"></i> 删除此条经历
+                        </button>
+                    </div>
+                    
+                    <button class="btn-outline" @click="addExperience" style="width: 100%; border-style: dashed; color: #666; background: #f9f9f9;">
+                        <i class="fas fa-plus"></i> 添加实习经历
+                    </button>
+                </div>
+
+                <!-- Work Experience (New) -->
+                <div v-show="currentTab === 'work'">
+                    <div class="module-header"><i class="fas fa-chart-line"></i> <span>工作经历</span></div>
+                    <div class="module-desc">填写您的工作经历，包括公司、职位和工作职责等。可通过拖拽进行排序。</div>
+                    
+                    <div v-for="(job, index) in resume.workExperience" :key="index" style="margin-bottom: 20px; border: 1px solid #e8e8e8; padding: 20px; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <div class="form-row" style="margin-bottom: 15px;">
+                            <div class="form-col" style="flex: 2;">
+                                <div class="input-wrapper">
+                                    <i class="far fa-building"></i>
+                                    <input v-model="job.company" placeholder="例如：某科技公司">
+                                </div>
+                            </div>
+                            <div class="form-col" style="flex: 1;">
+                                <div class="input-wrapper">
+                                    <i class="far fa-calendar-alt"></i>
+                                    <input v-model="job.duration" placeholder="例如：2021.06 - 2022.08">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="input-wrapper" style="margin-bottom: 15px;">
+                            <i class="far fa-id-card"></i>
+                            <input v-model="job.position" placeholder="例如：高级前端工程师">
+                        </div>
+                        
+                        <div class="editor-container" style="margin-bottom: 15px;">
+                            <!-- Toolbar -->
+                            <div class="custom-editor-toolbar">
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('**', '**', 'work-desc-' + index, v => job.description = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('*', '*', 'work-desc-' + index, v => job.description = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                                </div>
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('- ', '', 'work-desc-' + index, v => job.description = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('1. ', '', 'work-desc-' + index, v => job.description = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                                </div>
+                                <div style="margin-left: auto; font-size: 12px; color: #999;">
+                                    <i class="fab fa-markdown"></i> Markdown
+                                </div>
+                            </div>
+                            
+                            <!-- Textarea -->
+                            <textarea 
+                                :id="'work-desc-' + index"
+                                class="custom-textarea" 
+                                style="min-height: 200px;"
+                                v-model="job.description" 
+                                placeholder="- 负责模块开发..."
+                            ></textarea>
+                        </div>
+                        
+                        <button class="btn-outline" @click="removeWorkExperience(index)" style="width: 100%; border-color: #ff4d4f; color: #ff4d4f;">
+                            <i class="far fa-trash-alt"></i> 删除此条经历
+                        </button>
+                    </div>
+                    
+                    <button class="btn-outline" @click="addWorkExperience" style="width: 100%; border-style: dashed; color: #666; background: #f9f9f9;">
+                        <i class="fas fa-plus"></i> 添加工作经历
+                    </button>
+                </div>
+
+                <!-- Education -->
+                <div v-show="currentTab === 'education'">
+                    <div v-if="!editingEducation">
+                        <div class="module-header"><i class="fas fa-graduation-cap"></i> <span>教育背景</span></div>
+                        <div class="module-desc">填写您的教育背景信息，包括学校、专业、学位等。可通过拖拽进行排序。</div>
+
+                        <div style="margin-bottom: 20px;">
+                            <div class="module-header" style="font-size: 14px; margin-bottom: 10px;">
+                                <i class="far fa-star" style="color: #999; font-size: 14px;"></i> 
+                                <span style="font-size: 14px; font-weight: normal; color: #666;">教育背景列表</span>
+                            </div>
+                            
+                            <div v-for="(edu, index) in resume.education" :key="index" class="edu-card">
+                                <div class="edu-info">
+                                    <div class="edu-school">{{ edu.school }}</div>
+                                    <div class="edu-tags">
+                                        <div class="tag-blue"><i class="far fa-file-alt"></i> {{ edu.major }}</div>
+                                        <div class="tag-orange">{{ edu.degree }}</div>
+                                    </div>
+                                </div>
+                                <div class="edu-actions">
+                                    <div style="display: flex; align-items: center; gap: 5px;">
+                                        <i class="far fa-calendar-alt"></i> {{ edu.year }}
+                                    </div>
+                                    <div class="action-btn edit" @click="editEducation(index)"><i class="fas fa-pencil-alt"></i></div>
+                                    <div class="action-btn delete" @click="removeEducation(index)"><i class="far fa-trash-alt"></i></div>
+                                </div>
+                            </div>
+
+                            <button class="btn-outline" @click="addNewEducation" style="width: 100%; border-style: dashed; color: #1890ff; border-color: #1890ff; background: #f0f7ff;">
+                                <i class="fas fa-plus"></i> 添加新的教育背景
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Editing Form -->
+                    <div v-else class="edit-form-card">
+                        <div class="form-header">
+                            <div class="form-title">{{ isNewEducation ? '添加新的教育背景' : '编辑教育背景' }}</div>
+                            <button class="btn-link" @click="cancelEditEducation">取消</button>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label class="required">学校名称</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-university"></i>
+                                    <input v-model="currentEducation.school" placeholder="例如：华东师范大学">
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <label>学校层级</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-award"></i>
+                                    <input v-model="currentEducation.level" placeholder="例如：985">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label class="required">专业</label>
+                                <div class="input-wrapper">
+                                    <i class="far fa-file-alt"></i>
+                                    <input v-model="currentEducation.major" placeholder="例如：计算机技术">
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <label class="required">学位</label>
+                                <div class="input-wrapper select-wrapper no-icon">
+                                    <select v-model="currentEducation.degree">
+                                        <option value="" disabled selected>请选择</option>
+                                        <option value="本科">本科</option>
+                                        <option value="硕士">硕士</option>
+                                        <option value="博士">博士</option>
+                                        <option value="其他">其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label>GPA</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-trophy"></i>
+                                    <input v-model="currentEducation.gpa" placeholder="例如：3.8/4.0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <label class="required">在校时间</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="input-wrapper" style="flex: 1;">
+                                        <input v-model="currentEducation.startDate" placeholder="起始时间">
+                                    </div>
+                                    <span style="color: #999;">→</span>
+                                    <div class="input-wrapper" style="flex: 1;">
+                                        <input v-model="currentEducation.endDate" placeholder="结束时间 (在读可不选)">
+                                        <i class="far fa-calendar-alt" style="left: auto; right: 10px;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn-save" @click="saveEducationItem" style="width: 100%; margin-top: 10px;">
+                            <i class="fas fa-check"></i> 确认保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="editor-bottom">
+                <div class="save-status">
+                    <i class="fas fa-check-circle"></i> 
+                    <span v-if="saveTime">已保存 · {{ saveTime }}</span>
+                    <span v-else>尚未保存</span>
+                </div>
+                <button class="btn-save" @click="saveResume"><i class="fas fa-cloud-upload-alt"></i> 保存</button>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel">
+            <div class="preview-header">
+                <div class="preview-title">简历预览</div>
+                <div style="font-size: 13px; color: #666; cursor: pointer;">分页视图 <i class="fas fa-chevron-down"></i></div>
+            </div>
+            
+            <div class="preview-scroll-area">
+                <div class="resume-paper" id="resume-preview">
+                    <!-- Resume Header -->
+                    <div class="resume-header" style="display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <img v-if="resume.avatar" :src="resume.avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 15px;">
+                        <h1 style="margin: 0; font-size: 24px;">{{ resume.name || '姓名' }}</h1>
+                        <p style="margin: 10px 0; color: #666; font-size: 14px;">
+                            <span v-if="resume.gender">{{ resume.gender }} | </span>
+                            <span v-if="resume.age">{{ resume.age }}岁 | </span>
+                            <span v-if="resume.location">{{ resume.location }} | </span>
+                            <span v-if="resume.politicalStatus">{{ resume.politicalStatus }}</span>
+                        </p>
+                        <p style="margin: 5px 0; color: #666; font-size: 14px;">
+                            <span v-if="resume.jobIntention">求职意向：{{ resume.jobIntention }} | </span>
+                            {{ resume.phone }} | {{ resume.email }}
+                        </p>
+                        <p style="margin: 5px 0; color: #1890ff; font-size: 14px;" v-if="resume.blog || resume.github">
+                            <span v-if="resume.blog"><i class="fas fa-link"></i> {{ resume.blog }} </span>
+                            <span v-if="resume.github" style="margin-left: 10px;"><i class="fab fa-github"></i> {{ resume.github }}</span>
+                        </p>
+                    </div>
+
+                    <!-- Dynamic Modules -->
+                    <template v-for="mod in moduleOrder" :key="mod">
+                        <!-- Work Experience -->
+                        <div class="resume-section" v-if="mod === 'experience' && resume.experience.length > 0">
+                            <h3>实习经历</h3>
+                            <div v-for="job in resume.experience" class="resume-item">
+                                <div class="resume-item-header">
+                                    <span>{{ job.company }}</span>
+                                    <span style="color: #666; font-weight: normal;">{{ job.duration }}</span>
+                                </div>
+                                <div class="resume-item-subtitle">{{ job.position }}</div>
+                                <div class="resume-desc" v-html="renderMarkdown(job.description)"></div>
+                            </div>
+                        </div>
+
+                        <!-- Work Experience -->
+                        <div class="resume-section" v-if="mod === 'work' && resume.workExperience && resume.workExperience.length > 0">
+                            <h3>工作经历</h3>
+                            <div v-for="job in resume.workExperience" class="resume-item">
+                                <div class="resume-item-header">
+                                    <span>{{ job.company }}</span>
+                                    <span style="color: #666; font-weight: normal;">{{ job.duration }}</span>
+                                </div>
+                                <div class="resume-item-subtitle">{{ job.position }}</div>
+                                <div class="resume-desc" v-html="renderMarkdown(job.description)"></div>
+                            </div>
+                        </div>
+
+                        <!-- Projects (New) -->
+                        <div class="resume-section" v-if="mod === 'projects' && resume.projects && resume.projects.length > 0">
+                            <h3>项目经历</h3>
+                            <div v-for="proj in resume.projects" class="resume-item">
+                                <div class="resume-item-header">
+                                    <span>{{ proj.name }}</span>
+                                    <span style="color: #666; font-weight: normal;">{{ proj.duration }}</span>
+                                </div>
+                                <div class="resume-item-subtitle">{{ proj.role }}</div>
+                                <div class="resume-desc" v-html="renderMarkdown(proj.description)"></div>
+                            </div>
+                        </div>
+
+                        <!-- Skills -->
+                        <div class="resume-section" v-if="mod === 'skills' && resume.summary">
+                            <h3>专业技能</h3>
+                            <div class="resume-desc" v-html="compiledMarkdown"></div>
+                        </div>
+
+                        <!-- Education -->
+                        <div class="resume-section" v-if="mod === 'education' && resume.education.length > 0">
+                            <h3>教育背景</h3>
+                            <div v-for="edu in resume.education" class="resume-item">
+                                <div class="resume-item-header">
+                                    <span>{{ edu.school }}</span>
+                                    <span style="color: #666; font-weight: normal;">{{ edu.year }}</span>
+                                </div>
+                                <div class="resume-item-subtitle">{{ edu.degree }}</div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="preview-bottom">
+                <button class="btn-outline"><i class="fas fa-pencil-alt"></i> 修改简历</button>
+                <button class="btn-export" :disabled="isDownloading" @click="downloadPDF">
+                    <i class="fas fa-download"></i> {{ isDownloading ? '生成中...' : '导出 PDF' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Config Modal (Moved inside #app) -->
+        <div class="modal-overlay" :class="{ active: showConfigModal }" @click.self="showConfigModal = false">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <div class="modal-title"><i class="fas fa-pen"></i> 简历配置与模块管理</div>
+                    <i class="fas fa-times" style="position: absolute; right: 25px; top: 25px; cursor: pointer; color: #999; font-size: 18px;" @click="showConfigModal = false"></i>
+                </div>
+                
+                <div class="config-tabs">
+                    <div class="config-tab">全局配置</div>
+                    <div class="config-tab active">模块配置</div>
+                    <div class="config-tab" v-for="mod in allModules" :key="mod.id">{{ mod.name }}</div>
+                </div>
+
+                <div class="modal-body">
+                    <div style="color: #666; margin-bottom: 15px; display: flex; align-items: center; gap: 5px;">
+                        <i class="far fa-question-circle"></i> 模块配置
+                    </div>
+
+                    <div class="module-list-enhanced">
+                    <div 
+                        v-for="(mod, index) in allModules" 
+                        :key="mod.id" 
+                        class="module-item-enhanced"
+                        :class="{ 'dragging': draggedIndex === index, 'drag-over': dragOverIndex === index }"
+                        :draggable="!mod.locked"
+                        @dragstart="onDragStart($event, index)"
+                        @dragenter="onDragEnter($event, index)"
+                        @dragover.prevent
+                        @drop="onDrop($event, index)"
+                        @dragend="onDragEnd"
+                    >
+                        <div class="module-info">
+                            <i class="fas fa-bars drag-handle" :style="{ cursor: mod.locked ? 'not-allowed' : 'grab', opacity: mod.locked ? 0.3 : 1 }"></i>
+                            <div class="module-icon"><i :class="mod.icon"></i></div>
+                            <div style="font-weight: bold; color: #333;">{{ mod.name }}</div>
+                        </div>
+                        <div class="module-toggle" :class="mod.visible ? 'active' : 'inactive'" @click="toggleModuleVisibility(index)">
+                            <!-- Checkbox -->
+                            <div class="checkbox-wrapper">
+                                <i class="fas fa-check" v-if="mod.visible"></i>
+                            </div>
+                            
+                            <!-- Eye Icon -->
+                            <i class="fas eye-icon" :class="mod.visible ? 'fa-eye' : 'fa-eye-slash'"></i>
+                            
+                            <!-- Text -->
+                            <span :style="{ color: mod.visible ? '#52c41a' : '#999' }">{{ mod.visible ? '显示' : '隐藏' }}</span>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn-save" @click="saveConfig" style="width: 120px;">完成配置</button>
+                    <button class="btn-save" @click="saveResume" style="margin-left: 10px; background: white; color: #1890ff; border: 1px solid #1890ff;">
+                        <i class="fas fa-cloud-upload-alt"></i> 保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, computed } = Vue
+
+        createApp({
+            setup() {
+                const isDownloading = ref(false)
+                const currentTab = ref('basic')
+                const saveTime = ref('')
+                const resume = ref({
+                    name: '张三',
+                    title: '全栈开发工程师',
+                    email: 'zhangsan@example.com',
+                    phone: '13812345678',
+                    gender: '男',
+                    age: '23',
+                    blog: '',
+                    github: '',
+                    jobIntention: '前端工程师',
+                    politicalStatus: '共青团员',
+                    location: '上海市',
+                    avatar: '', 
+                    summary: '- 熟练掌握 C++，熟悉面向对象编程。\n- 了解常用设计模式和数据结构。\n- 熟悉 Linux 开发环境。',
+                    experience: [
+                        { company: '某科技公司', position: '前端开发', duration: '2021-2023', description: '负责公司官网开发，使用 Vue3。' }
+                    ],
+                    workExperience: [],
+                    projects: [
+                        { name: '基于RK3568的AC+AP无线网络控制系统设计与实现', role: '开发工程师', duration: '2025-08 - 2025-10', description: '- 实现了论坛系统，功能包含XXX、XXX\n- **核心功能具体实现**：\n1. 通过对登录用户颁发登录凭证' }
+                    ],
+                    education: [
+                        { school: '华东师范大学', degree: '硕士', major: '计算机技术', year: '2025-08 - 至今', level: '985' },
+                        { school: '山西传媒学院', degree: '本科', major: '数字媒体技术', year: '2020-09 - 2024-07', level: '' }
+                    ]
+                })
+
+                // 通用 Markdown 渲染函数
+                const renderMarkdown = (text) => {
+                    if (!text) return '';
+                    if (typeof marked !== 'undefined') {
+                        return marked.parse(text);
+                    }
+                    return text.replace(/\n/g, '<br>').replace(/- /g, '• ');
+                }
+
+                // 简单的 Markdown 渲染 (保留 computed 以兼容旧代码，或直接在模板中使用 renderMarkdown)
+                const compiledMarkdown = computed(() => {
+                    if (!resume.value.summary) return '<p style="color:#999">暂无内容，请在下方编辑...</p>';
+                    return renderMarkdown(resume.value.summary);
+                })
+
+                // 通用插入文本函数
+                const insertText = (prefix, suffix, elementId, updateModel) => {
+                    const textarea = document.getElementById(elementId);
+                    if (!textarea) return;
+
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const text = textarea.value;
+                    
+                    const before = text.substring(0, start);
+                    const selection = text.substring(start, end);
+                    const after = text.substring(end);
+
+                    const newValue = before + prefix + selection + suffix + after;
+                    
+                    // 更新模型
+                    updateModel(newValue);
+                    
+                    // 恢复焦点并移动光标
+                    setTimeout(() => {
+                        textarea.focus();
+                        textarea.selectionStart = start + prefix.length;
+                        textarea.selectionEnd = end + prefix.length;
+                    }, 0);
+                }
+
+                const triggerUpload = () => {
+                    document.getElementById('avatar-upload').click();
+                }
+
+                const handleAvatarUpload = (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        if (file.size > 1024 * 1024) {
+                            alert('图片大小不能超过 1MB');
+                            return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            resume.value.avatar = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+
+                const removeAvatar = () => {
+                    resume.value.avatar = '';
+                }
+
+                const addExperience = () => {
+                    resume.value.experience.push({ company: '', position: '', duration: '', description: '' })
+                }
+
+                const removeExperience = (index) => {
+                    resume.value.experience.splice(index, 1)
+                }
+
+                const addWorkExperience = () => {
+                    if (!resume.value.workExperience) resume.value.workExperience = [];
+                    resume.value.workExperience.push({ company: '', position: '', duration: '', description: '' })
+                }
+
+                const removeWorkExperience = (index) => {
+                    resume.value.workExperience.splice(index, 1)
+                }
+
+                const editingProjectIndex = ref(-1)
+                const currentProject = ref({ name: '', role: '', startDate: '', endDate: '', description: '' })
+
+                const resetProjectForm = () => {
+                    editingProjectIndex.value = -1
+                    currentProject.value = { name: '', role: '', startDate: '', endDate: '', description: '' }
+                }
+
+                const editProject = (index) => {
+                    editingProjectIndex.value = index
+                    const proj = { ...resume.value.projects[index] }
+                    let start = '', end = ''
+                    if (proj.duration) {
+                        const parts = proj.duration.split(' - ')
+                        start = parts[0] || ''
+                        end = parts[1] === '至今' ? '' : (parts[1] || '')
+                    }
+                    currentProject.value = { ...proj, startDate: start, endDate: end }
+                    
+                    // 滚动到表单位置
+                    setTimeout(() => {
+                         const form = document.querySelector('.edit-form-card')
+                         if(form) form.scrollIntoView({ behavior: 'smooth' })
+                    }, 100)
+                }
+
+                const removeProject = (index) => {
+                    if(confirm('确定要删除这条项目经历吗？')) {
+                        resume.value.projects.splice(index, 1)
+                    }
+                }
+
+                const saveProjectItem = () => {
+                    if (!currentProject.value.name) {
+                        alert('请输入项目名称');
+                        return;
+                    }
+                    
+                    // 组合时间
+                    let duration = currentProject.value.startDate
+                    if (currentProject.value.endDate) {
+                        duration += ' - ' + currentProject.value.endDate
+                    } else if (currentProject.value.startDate) {
+                         duration += ' - 至今'
+                    }
+                    
+                    const newItem = {
+                        ...currentProject.value,
+                        duration: duration
+                    }
+                    
+                    if (editingProjectIndex.value === -1) {
+                        if (!resume.value.projects) resume.value.projects = []
+                        resume.value.projects.push(newItem)
+                    } else {
+                        resume.value.projects[editingProjectIndex.value] = newItem
+                    }
+                    
+                    resetProjectForm()
+                }
+
+                const editingEducation = ref(false)
+                const isNewEducation = ref(false)
+                const currentEducationIndex = ref(-1)
+                const currentEducation = ref({})
+                
+                // 模块配置升级
+                const showConfigModal = ref(false)
+                
+                // 定义所有可用模块及其元数据
+                const allModules = ref([
+                    { id: 'basic', name: '基本信息', icon: 'fas fa-user', visible: true, locked: true }, // 锁定不可隐藏
+                    { id: 'education', name: '教育背景', icon: 'fas fa-graduation-cap', visible: true },
+                    { id: 'experience', name: '实习经历', icon: 'fas fa-briefcase', visible: true },
+                    { id: 'work', name: '工作经历', icon: 'fas fa-chart-line', visible: true },
+                    { id: 'projects', name: '项目经历', icon: 'fas fa-project-diagram', visible: true },
+                    { id: 'skills', name: '专业技能', icon: 'fas fa-check-square', visible: true },
+                    { id: 'awards', name: '获奖经历', icon: 'fas fa-trophy', visible: true },
+                    { id: 'summary', name: '个人评价', icon: 'fas fa-user-edit', visible: false }
+                ])
+                
+                // 计算当前显示的模块顺序（不包括基本信息，因为基本信息位置固定）
+                const moduleOrder = computed(() => {
+                    return allModules.value
+                        .filter(m => m.visible && m.id !== 'basic')
+                        .map(m => m.id)
+                })
+
+                const openConfigModal = () => {
+                    showConfigModal.value = true
+                }
+                
+                const toggleModuleVisibility = (index) => {
+                    if (allModules.value[index].locked) return; // 锁定的模块不可切换
+                    allModules.value[index].visible = !allModules.value[index].visible;
+                }
+
+                // 简单的数组移动函数（后续可接入拖拽库）
+                const draggedIndex = ref(-1)
+                const dragOverIndex = ref(-1)
+
+                const onDragStart = (event, index) => {
+                    if (allModules.value[index].locked) {
+                        event.preventDefault();
+                        return;
+                    }
+                    draggedIndex.value = index;
+                    event.dataTransfer.effectAllowed = 'move';
+                    // 稍微延迟添加 dragging 类，避免拖拽时原元素立即消失
+                    setTimeout(() => {
+                        event.target.classList.add('dragging');
+                    }, 0);
+                }
+
+                const onDragEnter = (event, index) => {
+                    // 如果目标是锁定的（如基本信息），不允许放置在其上方（保持其在第一位）
+                    // 但如果是为了交换其他位置，可以允许经过
+                    if (index !== draggedIndex.value) {
+                        dragOverIndex.value = index;
+                    }
+                }
+
+                const onDragEnd = (event) => {
+                    draggedIndex.value = -1;
+                    dragOverIndex.value = -1;
+                    event.target.classList.remove('dragging');
+                }
+
+                const onDrop = (event, index) => {
+                    const fromIndex = draggedIndex.value;
+                    const toIndex = index;
+                    
+                    if (fromIndex === -1 || fromIndex === toIndex) return;
+                    
+                    // 再次检查锁定状态，防止绕过
+                    if (allModules.value[toIndex].locked) {
+                         // 如果试图放置在锁定项（如基本信息）上，且该锁定项在列表顶部，
+                         // 我们应该允许放置在其下方（即 index 1）而不是替换它
+                         // 这里简化逻辑：如果目标是锁定的，不做任何操作，或者根据需要调整
+                         // 策略：锁定项永远在 index 0，不可移动，不可被抢占
+                         return;
+                    }
+
+                    // 移动元素
+                    const item = allModules.value[fromIndex];
+                    allModules.value.splice(fromIndex, 1);
+                    allModules.value.splice(toIndex, 0, item);
+                }
+
+                const moveModule = (index, direction) => {
+                   // 兼容旧的按钮排序（如果需要）
+                   if (index + direction < 0 || index + direction >= allModules.value.length) return
+                   const temp = allModules.value[index]
+                   allModules.value[index] = allModules.value[index + direction]
+                   allModules.value[index + direction] = temp
+                }
+
+                const saveConfig = () => {
+                    showConfigModal.value = false
+                    saveResume() 
+                }
+
+                const addNewEducation = () => {
+                    editingEducation.value = true
+                    isNewEducation.value = true
+                    currentEducation.value = { school: '', major: '', degree: '', level: '', gpa: '', startDate: '', endDate: '', year: '' }
+                }
+
+                const editEducation = (index) => {
+                    editingEducation.value = true
+                    isNewEducation.value = false
+                    currentEducationIndex.value = index
+                    // 分割 year 字段（如果有的话）
+                    const edu = { ...resume.value.education[index] }
+                    if (edu.year && edu.year.includes('-')) {
+                        const parts = edu.year.split(' - ')
+                        edu.startDate = parts[0]
+                        edu.endDate = parts[1] === '至今' ? '' : parts[1]
+                    } else {
+                         edu.startDate = edu.year
+                    }
+                    currentEducation.value = edu
+                }
+
+                const cancelEditEducation = () => {
+                    editingEducation.value = false
+                }
+
+                const saveEducationItem = () => {
+                    // 合并时间
+                    let yearStr = currentEducation.value.startDate
+                    if (currentEducation.value.endDate) {
+                        yearStr += ' - ' + currentEducation.value.endDate
+                    } else if (currentEducation.value.startDate) {
+                         yearStr += ' - 至今'
+                    }
+                    currentEducation.value.year = yearStr
+
+                    if (isNewEducation.value) {
+                        resume.value.education.push({ ...currentEducation.value })
+                    } else {
+                        resume.value.education[currentEducationIndex.value] = { ...currentEducation.value }
+                    }
+                    editingEducation.value = false
+                }
+
+                const removeEducation = (index) => {
+                    if(confirm('确定要删除这条教育背景吗？')) {
+                        resume.value.education.splice(index, 1)
+                    }
+                }
+
+                const saveResume = () => {
+                    const data = {
+                        resume: resume.value,
+                        // 保存所有模块的完整状态（包括顺序和可见性）
+                        allModules: allModules.value
+                    }
+                    localStorage.setItem('my_resume', JSON.stringify(data))
+                    saveTime.value = new Date().toLocaleString()
+                    alert('简历已保存到本地！')
+                }
+
+                const downloadPDF = () => {
+                    isDownloading.value = true;
+                    
+                    // 再次检查组件是否加载
+                    if (typeof html2pdf === 'undefined') {
+                         if (window.html2pdf) {
+                             window.html2pdf = window.html2pdf;
+                         } else {
+                            alert('PDF 生成组件未能加载。请检查网络连接或刷新页面。');
+                            isDownloading.value = false;
+                            return;
+                         }
+                    }
+
+                    // 添加导出状态类，改变页面布局
+                    document.body.classList.add('exporting');
+                    
+                    // 强制滚动到顶部
+                    window.scrollTo(0, 0);
+
+                    // 获取预览元素
+                    const element = document.getElementById('resume-preview');
+                    
+                    const opt = {
+                        margin:       0, // 页面样式中已包含 padding
+                        filename:     (resume.value.name || '简历') + '.pdf',
+                        image:        { type: 'jpeg', quality: 0.98 },
+                        html2canvas:  { 
+                            scale: 2, 
+                            useCORS: true, 
+                            scrollY: 0 
+                        },
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+                    
+                    // 延迟执行以等待样式应用和重绘
+                    setTimeout(() => {
+                        html2pdf().set(opt).from(element).save()
+                            .then(() => {
+                                document.body.classList.remove('exporting');
+                                isDownloading.value = false;
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                document.body.classList.remove('exporting');
+                                alert('PDF 生成失败：' + err.message);
+                                isDownloading.value = false;
+                            });
+                    }, 500);
+                }
+
+                onMounted(() => {
+                    const saved = localStorage.getItem('my_resume')
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved)
+                            // 兼容旧版本数据
+                            if (parsed.resume) {
+                                resume.value = parsed.resume
+                                if (parsed.allModules) {
+                                    // 过滤掉已废弃的 scores 模块
+                                    allModules.value = parsed.allModules.filter(m => m.id !== 'scores')
+                                } else if (parsed.moduleOrder) {
+                                    // 迁移逻辑：如果只有旧的 moduleOrder，尝试恢复到 allModules
+                                    // 这里简单处理，主要依赖默认值
+                                }
+                            } else {
+                                resume.value = parsed
+                            }
+                        } catch(e) {}
+                    }
+                })
+
+                return {
+                    resume,
+                    triggerUpload,
+                    handleAvatarUpload,
+                    removeAvatar,
+                    addExperience,
+                    removeExperience,
+                    addWorkExperience,
+                    removeWorkExperience,
+                    editingProjectIndex,
+                    currentProject,
+                    resetProjectForm,
+                    editProject,
+                    removeProject,
+                    saveProjectItem,
+                    editingEducation,
+                    isNewEducation,
+                    currentEducation,
+                    addNewEducation,
+                    editEducation,
+                    cancelEditEducation,
+                    saveEducationItem,
+                    removeEducation,
+                    saveResume,
+                    downloadPDF,
+                    isDownloading,
+                    currentTab,
+                    saveTime,
+                    compiledMarkdown,
+                    insertText,
+                    renderMarkdown,
+                    showConfigModal,
+                    allModules,
+                    moduleOrder,
+                    openConfigModal,
+                    toggleModuleVisibility,
+                    moveModule,
+                    saveConfig,
+                    draggedIndex,
+                    dragOverIndex,
+                    onDragStart,
+                    onDragEnter,
+                    onDragEnd,
+                    onDrop
+                }
+            }
+        }).mount('#app')
+    </script>
+    {% endverbatim %}
+</body>
+</html>
