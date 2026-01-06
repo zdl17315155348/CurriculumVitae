@@ -17,7 +17,7 @@
         }
     </script>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 0; height: 100vh; overflow-x: auto; overflow-y: hidden; display: flex; flex-direction: column; min-height: 600px; }
         
         /* Top Navigation Bar */
         .top-nav {
@@ -28,7 +28,9 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            flex-shrink: 0; /* Prevent header from shrinking */
+            z-index: 10;
+            min-width: 1000px; /* Ensure nav matches main content width */
         }
         .logo {
             display: flex;
@@ -48,12 +50,17 @@
 
         /* Main Container */
         .main-wrapper {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px 20px;
+            max-width: 100%; /* Full width */
+            margin: 0;
+            padding: 10px;
             display: flex;
-            gap: 20px;
-            height: calc(100vh - 100px);
+            gap: 10px;
+            flex: 1; /* Take remaining height */
+            height: calc(100% - 60px); /* Explicit height */
+            box-sizing: border-box;
+            background: #f0f2f5;
+            min-width: 1000px; /* Minimum width to prevent layout breaking */
+            overflow: hidden;
         }
 
         /* Editor Panel (Left) */
@@ -65,6 +72,9 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            height: 100%; /* Fill container */
+            min-width: 400px; /* Minimum width for editor */
+            min-height: 0; /* Important for flex child scroll */
         }
         .editor-header-row {
             padding: 20px 20px 0;
@@ -115,6 +125,9 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            height: 100%; /* Fill container */
+            min-width: 500px; /* Minimum width for preview */
+            min-height: 0; /* Important for flex child scroll */
         }
         .preview-header {
             padding: 15px 20px;
@@ -190,43 +203,96 @@
             color: #333;
         }
         
-        /* Resume Content Styles */
+        /* Resume Content Styles - Dynamic Variables */
+        #resume-preview {
+            --theme-color: #1890ff;
+            --heading-size: 16px;
+            --content-size: 14px;
+            --module-spacing: 25px;
+            --line-height: 1.5;
+            --name-size: 24px;
+            --avatar-scale: 1;
+        }
+
+        .resume-section {
+            margin-bottom: var(--module-spacing);
+        }
+
         .resume-section h3 {
-            color: #1890ff;
+            color: var(--theme-color);
             border-bottom: 1px solid #eee;
             padding-bottom: 8px;
-            margin-top: 25px;
+            margin-top: 0;
             margin-bottom: 15px;
-            font-size: 16px;
+            font-size: var(--heading-size);
+            display: flex;
+            align-items: center;
         }
+
+        .resume-section h3::before {
+            /* Optional: Add a decorative element for certain templates */
+            content: '';
+            display: none; 
+        }
+
         .resume-item-header {
             display: flex;
             justify-content: space-between;
             font-weight: bold;
             margin-bottom: 5px;
-            font-size: 15px;
+            font-size: calc(var(--content-size) + 1px);
         }
         .resume-item-subtitle {
             color: #666;
             margin-bottom: 8px;
-            font-size: 14px;
+            font-size: var(--content-size);
         }
         .resume-desc {
-            font-size: 14px;
-            line-height: 1.8; /* Match preview card */
+            font-size: var(--content-size);
+            line-height: var(--line-height);
             color: #333;
         }
-        .resume-desc ul { 
-            padding-left: 20px; 
-            margin: 0; /* Match preview card */
+        .resume-header h1 {
+            font-size: var(--name-size); /* Dynamic name size */
+            margin-bottom: 10px;
         }
-        .resume-desc li { 
-            margin-bottom: 0; /* Tighten up list items */
+        .resume-header p {
+            font-size: var(--content-size);
+            line-height: var(--line-height);
         }
-        .resume-desc p {
-            margin: 0 0 10px 0;
+        
+        /* Template: Modern (Default) */
+        .template-modern .resume-section h3 {
+            border-bottom: 2px solid #eee;
+            border-bottom-color: rgba(0,0,0,0.1);
         }
 
+        /* Template: Classic */
+        .template-classic .resume-header {
+            text-align: center;
+            border-bottom: 2px solid var(--theme-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .template-classic .resume-section h3 {
+            background: #f9f9f9;
+            padding: 8px 15px;
+            border-left: 4px solid var(--theme-color);
+            border-bottom: none;
+        }
+
+        /* Template: Simple */
+        .template-simple .resume-section h3 {
+            border-bottom: 1px solid #000;
+            color: #000 !important; /* Force black headers */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .template-simple .resume-header {
+            text-align: left;
+            border-bottom: none;
+        }
+        
         /* Floating Chat Button */
         .floating-chat {
             position: absolute;
@@ -517,7 +583,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 800px; /* 改回 800px 宽度 */
+            width: 450px; /* Reduced width from 800px */
             height: 100vh;
             max-width: 90vw;
             max-height: none;
@@ -541,6 +607,36 @@
         }
         .modal-title { font-size: 18px; font-weight: bold; color: #333; display: flex; align-items: center; gap: 10px; }
         
+        .config-item {
+            margin-bottom: 20px;
+        }
+        .config-label {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .config-label i {
+            margin-right: 8px;
+            color: #666;
+            width: 16px;
+            text-align: center;
+        }
+        .config-label .info-icon {
+            margin-left: 5px;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+        }
         .config-tabs {
             display: flex;
             border-bottom: 1px solid #eee;
@@ -626,6 +722,85 @@
             border: none;
         }
         
+        /* Custom Module Modal - Centered */
+        .centered-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        .centered-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .centered-modal-card {
+            background: white;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(20px);
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+        .centered-modal-overlay.active .centered-modal-card {
+            transform: translateY(0);
+        }
+        .centered-modal-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .centered-modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1890ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .centered-modal-body {
+            padding: 0 25px 25px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 25px;
+            color: #666;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .info-box-title {
+            color: #1890ff;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .centered-modal-footer {
+            padding: 15px 25px 25px;
+            background: white;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
         /* Checkbox Styles */
         .checkbox-wrapper {
             width: 18px;
@@ -674,7 +849,7 @@
             <div class="editor-header-row">
                 <div class="editor-title">简历编辑器</div>
                 <div class="editor-actions">
-                    <span><i class="fas fa-plus"></i> 自定义简历模块</span>
+                    <span @click="showAddModuleModal = true"><i class="fas fa-plus"></i> 自定义简历模块</span>
                     <span @click="openConfigModal"><i class="fas fa-pen"></i> 自定义简历配置</span>
                 </div>
             </div>
@@ -683,9 +858,20 @@
                 <div class="tab-item" :class="{ active: currentTab === 'basic' }" @click="currentTab = 'basic'">基本信息</div>
                 <div class="tab-item" :class="{ active: currentTab === 'projects' }" @click="currentTab = 'projects'">项目经历</div>
                 <div class="tab-item" :class="{ active: currentTab === 'skills' }" @click="currentTab = 'skills'">专业技能</div>
+                <div class="tab-item" :class="{ active: currentTab === 'awards' }" @click="currentTab = 'awards'">获奖经历</div>
+                <div class="tab-item" :class="{ active: currentTab === 'summary' }" @click="currentTab = 'summary'">个人评价</div>
+                <div class="tab-item" :class="{ active: currentTab === 'research' }" @click="currentTab = 'research'">科研成果</div>
                 <div class="tab-item" :class="{ active: currentTab === 'experience' }" @click="currentTab = 'experience'">实习经历</div>
                 <div class="tab-item" :class="{ active: currentTab === 'work' }" @click="currentTab = 'work'">工作经历</div>
                 <div class="tab-item" :class="{ active: currentTab === 'education' }" @click="currentTab = 'education'">教育背景</div>
+                <!-- Custom Modules Tabs -->
+                <div class="tab-item" 
+                     v-for="mod in allModules.filter(m => m.isCustom && m.visible)" 
+                     :key="mod.id"
+                     :class="{ active: currentTab === mod.id }" 
+                     @click="currentTab = mod.id">
+                    {{ mod.name }}
+                </div>
             </div>
 
             <div class="editor-content">
@@ -910,6 +1096,135 @@
                         <button class="btn-save" @click="saveProjectItem" style="width: 100%; margin-top: 10px;">
                             <i class="fas fa-check"></i> {{ editingProjectIndex === -1 ? '确认添加' : '确认修改' }}
                         </button>
+                    </div>
+                </div>
+
+                <!-- Awards -->
+                <div v-if="currentTab === 'awards'" class="skills-wrapper">
+                    <div class="module-header"><i class="fas fa-trophy"></i> <span>获奖经历</span></div>
+                    <div class="module-desc">填写您的获奖经历，包括奖项名称、获奖时间和获奖级别。支持 Markdown 格式。</div>
+
+                    <!-- Preview Card -->
+                    <div class="skill-preview-card">
+                        <div class="skill-preview-title">
+                            <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> 获奖经历预览</span>
+                        </div>
+                        <div class="resume-desc" v-html="compiledAwards"></div>
+                    </div>
+
+                    <!-- Editor -->
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #333;">
+                            <span style="color: #ff4d4f;">*</span> <i class="far fa-lightbulb" style="color: #1890ff; margin-right: 5px;"></i> 获奖经历编辑
+                        </div>
+                        
+                        <div class="editor-container">
+                            <!-- Toolbar -->
+                            <div class="custom-editor-toolbar">
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('**', '**', 'award-textarea', v => resume.awards = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('*', '*', 'award-textarea', v => resume.awards = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                                </div>
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('- ', '', 'award-textarea', v => resume.awards = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('1. ', '', 'award-textarea', v => resume.awards = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Textarea -->
+                            <textarea 
+                                id="award-textarea" 
+                                class="custom-textarea" 
+                                v-model="resume.awards" 
+                                placeholder="- 蓝桥杯C/C++国家三等奖&#10;- ACM区域赛铜牌..."
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Summary -->
+                <div v-if="currentTab === 'summary'" class="skills-wrapper">
+                    <div class="module-header"><i class="far fa-file-alt"></i> <span>个人评价</span></div>
+                    <div class="module-desc">填写您的个人特点、职业目标和核心竞争力，突出您的优势和特长。支持 Markdown 格式。</div>
+
+                    <!-- Preview Card -->
+                    <div class="skill-preview-card">
+                        <div class="skill-preview-title">
+                            <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> 个人评价预览</span>
+                        </div>
+                        <div class="resume-desc" v-html="compiledPersonalSummary"></div>
+                    </div>
+
+                    <!-- Editor -->
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #333;">
+                            <span style="color: #ff4d4f;">*</span> <i class="fas fa-pencil-alt" style="color: #1890ff; margin-right: 5px;"></i> 编辑个人评价
+                        </div>
+                        
+                        <div class="editor-container">
+                            <!-- Toolbar -->
+                            <div class="custom-editor-toolbar">
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('**', '**', 'summary-textarea', v => resume.personalSummary = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('*', '*', 'summary-textarea', v => resume.personalSummary = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                                </div>
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('- ', '', 'summary-textarea', v => resume.personalSummary = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('1. ', '', 'summary-textarea', v => resume.personalSummary = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Textarea -->
+                            <textarea 
+                                id="summary-textarea" 
+                                class="custom-textarea" 
+                                v-model="resume.personalSummary" 
+                                placeholder="* 有快速学习的能力&#10;* 对目前的工作有极大的兴趣&#10;* 英语流利"
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Research -->
+                <div v-if="currentTab === 'research'" class="skills-wrapper">
+                    <div class="module-header"><i class="fas fa-flask"></i> <span>科研成果</span></div>
+                    <div class="module-desc">填写您的科研成果，包括发表的论文、专利、研究报告等。支持 Markdown 格式。</div>
+
+                    <!-- Preview Card -->
+                    <div class="skill-preview-card">
+                        <div class="skill-preview-title">
+                            <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> 科研成果预览</span>
+                        </div>
+                        <div class="resume-desc" v-html="compiledResearch"></div>
+                    </div>
+
+                    <!-- Editor -->
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #333;">
+                            <span style="color: #ff4d4f;">*</span> <i class="fas fa-search" style="color: #1890ff; margin-right: 5px;"></i> 编辑科研成果
+                        </div>
+                        
+                        <div class="editor-container">
+                            <!-- Toolbar -->
+                            <div class="custom-editor-toolbar">
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('**', '**', 'research-textarea', v => resume.research = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('*', '*', 'research-textarea', v => resume.research = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                                </div>
+                                <div class="toolbar-group">
+                                    <div class="toolbar-btn" @click="insertText('- ', '', 'research-textarea', v => resume.research = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                    <div class="toolbar-btn" @click="insertText('1. ', '', 'research-textarea', v => resume.research = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Textarea -->
+                            <textarea 
+                                id="research-textarea" 
+                                class="custom-textarea" 
+                                v-model="resume.research" 
+                                placeholder="* 发表**XXX**论文&#10;* 发表**XXX**论文"
+                            ></textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -1187,6 +1502,50 @@
                         </button>
                     </div>
                 </div>
+                <!-- Custom Modules Editor -->
+                <template v-for="mod in allModules.filter(m => m.isCustom)" :key="mod.id">
+                    <div v-if="currentTab === mod.id" class="skills-wrapper">
+                        <div class="module-header"><i :class="mod.icon"></i> <span>{{ mod.name }}</span></div>
+                        <div class="module-desc">您正在编辑自定义模块“{{ mod.name }}”。支持 Markdown 格式。</div>
+
+                        <!-- Preview Card -->
+                        <div class="skill-preview-card">
+                            <div class="skill-preview-title">
+                                <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> {{ mod.name }}预览</span>
+                            </div>
+                            <div class="resume-desc" v-html="renderMarkdown(resume[mod.id])"></div>
+                        </div>
+
+                        <!-- Editor -->
+                        <div style="margin-top: 20px;">
+                            <div style="font-weight: bold; margin-bottom: 10px; color: #333;">
+                                <span style="color: #ff4d4f;">*</span> <i class="fas fa-edit" style="color: #1890ff; margin-right: 5px;"></i> 编辑内容
+                            </div>
+                            
+                            <div class="editor-container">
+                                <!-- Toolbar -->
+                                <div class="custom-editor-toolbar">
+                                    <div class="toolbar-group">
+                                        <div class="toolbar-btn" @click="insertText('**', '**', 'custom-textarea-' + mod.id, v => resume[mod.id] = v)" title="加粗"><i class="fas fa-bold"></i></div>
+                                        <div class="toolbar-btn" @click="insertText('*', '*', 'custom-textarea-' + mod.id, v => resume[mod.id] = v)" title="斜体"><i class="fas fa-italic"></i></div>
+                                    </div>
+                                    <div class="toolbar-group">
+                                        <div class="toolbar-btn" @click="insertText('- ', '', 'custom-textarea-' + mod.id, v => resume[mod.id] = v)" title="无序列表"><i class="fas fa-list-ul"></i></div>
+                                        <div class="toolbar-btn" @click="insertText('1. ', '', 'custom-textarea-' + mod.id, v => resume[mod.id] = v)" title="有序列表"><i class="fas fa-list-ol"></i></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Textarea -->
+                                <textarea 
+                                    :id="'custom-textarea-' + mod.id" 
+                                    class="custom-textarea" 
+                                    v-model="resume[mod.id]" 
+                                    placeholder="请输入模块内容..."
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
 
             <div class="editor-bottom">
@@ -1207,25 +1566,27 @@
             </div>
             
             <div class="preview-scroll-area">
-                <div class="resume-paper" id="resume-preview">
+                <div class="resume-paper" id="resume-preview" :class="'template-' + globalConfig.template" :style="previewStyles">
                     <!-- Resume Header -->
-                    <div class="resume-header" style="display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                        <img v-if="resume.avatar" :src="resume.avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 15px;">
-                        <h1 style="margin: 0; font-size: 24px;">{{ resume.name || '姓名' }}</h1>
-                        <p style="margin: 10px 0; color: #666; font-size: 14px;">
-                            <span v-if="resume.gender">{{ resume.gender }} | </span>
-                            <span v-if="resume.age">{{ resume.age }}岁 | </span>
-                            <span v-if="resume.location">{{ resume.location }} | </span>
-                            <span v-if="resume.politicalStatus">{{ resume.politicalStatus }}</span>
-                        </p>
-                        <p style="margin: 5px 0; color: #666; font-size: 14px;">
-                            <span v-if="resume.jobIntention">求职意向：{{ resume.jobIntention }} | </span>
-                            {{ resume.phone }} | {{ resume.email }}
-                        </p>
-                        <p style="margin: 5px 0; color: #1890ff; font-size: 14px;" v-if="resume.blog || resume.github">
-                            <span v-if="resume.blog"><i class="fas fa-link"></i> {{ resume.blog }} </span>
-                            <span v-if="resume.github" style="margin-left: 10px;"><i class="fab fa-github"></i> {{ resume.github }}</span>
-                        </p>
+                    <div class="resume-header">
+                        <div style="display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                            <img v-if="resume.avatar" :src="resume.avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; transform: scale(var(--avatar-scale));">
+                            <h1 style="margin: 0; font-size: var(--name-size);">{{ resume.name || '姓名' }}</h1>
+                            <p style="margin: 10px 0; color: #666;">
+                                <span v-if="resume.gender">{{ resume.gender }} | </span>
+                                <span v-if="resume.age">{{ resume.age }}岁 | </span>
+                                <span v-if="resume.location">{{ resume.location }} | </span>
+                                <span v-if="resume.politicalStatus">{{ resume.politicalStatus }}</span>
+                            </p>
+                            <p style="margin: 5px 0; color: #666;">
+                                <span v-if="resume.jobIntention">求职意向：{{ resume.jobIntention }} | </span>
+                                {{ resume.phone }} | {{ resume.email }}
+                            </p>
+                            <p style="margin: 5px 0; color: var(--theme-color);" v-if="resume.blog || resume.github">
+                                <span v-if="resume.blog"><i class="fas fa-link"></i> {{ resume.blog }} </span>
+                                <span v-if="resume.github" style="margin-left: 10px;"><i class="fab fa-github"></i> {{ resume.github }}</span>
+                            </p>
+                        </div>
                     </div>
 
                     <!-- Dynamic Modules -->
@@ -1269,6 +1630,31 @@
                             </div>
                         </div>
 
+                        <!-- Awards (New) -->
+                        <div class="resume-section" v-if="mod === 'awards'">
+                            <h3>获奖经历</h3>
+                            <div class="resume-desc" v-html="compiledAwards"></div>
+                        </div>
+
+                        <!-- Personal Summary (New) -->
+                        <div class="resume-section" v-if="mod === 'summary'">
+                            <h3>个人评价</h3>
+                            <div class="resume-desc" v-html="compiledPersonalSummary"></div>
+                        </div>
+
+                        <!-- Research (New) -->
+                        <div class="resume-section" v-if="mod === 'research'">
+                            <h3>科研成果</h3>
+                            <div class="resume-desc" v-html="compiledResearch"></div>
+                        </div>
+
+                        <!-- Custom Modules (Dynamic) -->
+                        <div class="resume-section" v-if="allModules.find(m => m.id === mod && m.isCustom)">
+                            <h3>{{ allModules.find(m => m.id === mod).name }}</h3>
+                            <div class="resume-desc" v-if="resume[mod]" v-html="renderMarkdown(resume[mod])"></div>
+                            <div class="resume-desc" v-else style="color: #ccc; font-style: italic;">（暂无内容）</div>
+                        </div>
+
                         <!-- Skills -->
                         <div class="resume-section" v-if="mod === 'skills' && resume.summary">
                             <h3>专业技能</h3>
@@ -1298,6 +1684,43 @@
             </div>
         </div>
 
+        <!-- Add Module Modal -->
+        <div class="centered-modal-overlay" :class="{ active: showAddModuleModal }" @click.self="showAddModuleModal = false">
+            <div class="centered-modal-card">
+                <div class="centered-modal-header">
+                    <div class="centered-modal-title"><i class="fas fa-plus"></i> 添加自定义模块</div>
+                    <i class="fas fa-times" style="cursor: pointer; color: #999; font-size: 18px;" @click="showAddModuleModal = false"></i>
+                </div>
+                
+                <div class="centered-modal-body">
+                    <div class="info-box">
+                        <div class="info-box-title"><i class="far fa-question-circle"></i> 使用说明</div>
+                        <ul>
+                            <li>自定义模块可以添加简历中未包含的其他信息</li>
+                            <li>添加后可以在左侧模块列表中查看和编辑</li>
+                            <li>可以通过拖拽调整模块在简历中的显示顺序</li>
+                        </ul>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label class="required" style="display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-pen" style="color: #1890ff; font-size: 12px;"></i> 模块标题 <i class="far fa-question-circle" style="color: #999; font-weight: normal;"></i>
+                        </label>
+                        <div class="input-wrapper">
+                            <input v-model="newModuleTitle" placeholder="请输入模块标题" style="padding-left: 15px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="centered-modal-footer">
+                    <button class="btn-outline" @click="showAddModuleModal = false">取消</button>
+                    <button class="btn-save" @click="addNewModule" style="display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-plus"></i> 添加模块
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Config Modal (Moved inside #app) -->
         <div class="modal-overlay" :class="{ active: showConfigModal }" @click.self="showConfigModal = false">
             <div class="modal-card">
@@ -1307,48 +1730,164 @@
                 </div>
                 
                 <div class="config-tabs">
-                    <div class="config-tab">全局配置</div>
-                    <div class="config-tab active">模块配置</div>
-                    <div class="config-tab" v-for="mod in allModules" :key="mod.id">{{ mod.name }}</div>
+                    <div class="config-tab" :class="{ active: currentConfigTab === 'global' }" @click="currentConfigTab = 'global'">全局配置</div>
+                    <div class="config-tab" :class="{ active: currentConfigTab === 'module' }" @click="currentConfigTab = 'module'">模块配置</div>
+                    <div class="config-tab" :class="{ active: currentConfigTab === 'basic' }" @click="currentConfigTab = 'basic'">基本信息</div>
                 </div>
 
                 <div class="modal-body">
-                    <div style="color: #666; margin-bottom: 15px; display: flex; align-items: center; gap: 5px;">
-                        <i class="far fa-question-circle"></i> 模块配置
+                    <!-- Global Config -->
+                    <div v-if="currentConfigTab === 'global'" style="padding: 10px;">
+                        <div class="config-item">
+                            <div class="config-label">
+                                <i class="fas fa-th-large"></i> <span style="color: #ff4d4f; margin-right: 4px;">*</span> 选择简历模版 <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div class="input-wrapper select-wrapper">
+                                <select v-model="globalConfig.template">
+                                    <option value="modern">现代</option>
+                                    <option value="classic">经典</option>
+                                    <option value="simple">简约</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">
+                                <i class="fas fa-palette"></i> 主题色 <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <div class="color-swatch" style="background: #1890ff;" @click="globalConfig.themeColor = '#1890ff'" :style="{ borderColor: globalConfig.themeColor === '#1890ff' ? '#000' : '#ddd' }"></div>
+                                <div class="color-swatch" style="background: #52c41a;" @click="globalConfig.themeColor = '#52c41a'" :style="{ borderColor: globalConfig.themeColor === '#52c41a' ? '#000' : '#ddd' }"></div>
+                                <div class="color-swatch" style="background: #fa8c16;" @click="globalConfig.themeColor = '#fa8c16'" :style="{ borderColor: globalConfig.themeColor === '#fa8c16' ? '#000' : '#ddd' }"></div>
+                                <div class="color-swatch" style="background: #2f54eb;" @click="globalConfig.themeColor = '#2f54eb'" :style="{ borderColor: globalConfig.themeColor === '#2f54eb' ? '#000' : '#ddd' }"></div>
+                                <div class="color-swatch" style="background: #722ed1;" @click="globalConfig.themeColor = '#722ed1'" :style="{ borderColor: globalConfig.themeColor === '#722ed1' ? '#000' : '#ddd' }"></div>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">
+                                <i class="fas fa-text-height"></i> 模块标题大小 <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div class="input-wrapper select-wrapper">
+                                <select v-model="globalConfig.headingSize">
+                                    <option value="14px">14px</option>
+                                    <option value="16px">16px</option>
+                                    <option value="18px">18px</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">
+                                <i class="fas fa-font"></i> 模块内容大小 <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div class="input-wrapper select-wrapper">
+                                <select v-model="globalConfig.contentSize">
+                                    <option value="12px">12px</option>
+                                    <option value="13px">13px</option>
+                                    <option value="14px">14px</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">
+                                <i class="far fa-square"></i> 模块间距 (px) <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div class="input-wrapper" style="width: 100px;">
+                                <input type="number" v-model="globalConfig.moduleSpacing">
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">
+                                <i class="fas fa-arrows-alt-v"></i> 行高 <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div class="input-wrapper" style="width: 100px;">
+                                <input type="number" step="0.1" v-model="globalConfig.lineHeight">
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="module-list-enhanced">
-                    <div 
-                        v-for="(mod, index) in allModules" 
-                        :key="mod.id" 
-                        class="module-item-enhanced"
-                        :class="{ 'dragging': draggedIndex === index, 'drag-over': dragOverIndex === index }"
-                        :draggable="!mod.locked"
-                        @dragstart="onDragStart($event, index)"
-                        @dragenter="onDragEnter($event, index)"
-                        @dragover.prevent
-                        @drop="onDrop($event, index)"
-                        @dragend="onDragEnd"
-                    >
-                        <div class="module-info">
-                            <i class="fas fa-bars drag-handle" :style="{ cursor: mod.locked ? 'not-allowed' : 'grab', opacity: mod.locked ? 0.3 : 1 }"></i>
-                            <div class="module-icon"><i :class="mod.icon"></i></div>
-                            <div style="font-weight: bold; color: #333;">{{ mod.name }}</div>
+                    <!-- Module Config -->
+                    <div v-else-if="currentConfigTab === 'module'">
+                        <div style="color: #666; margin-bottom: 15px; display: flex; align-items: center; gap: 5px;">
+                            <i class="far fa-question-circle"></i> 模块配置 (拖拽调整顺序，点击切换显示/隐藏)
                         </div>
-                        <div class="module-toggle" :class="mod.visible ? 'active' : 'inactive'" @click="toggleModuleVisibility(index)">
-                            <!-- Checkbox -->
-                            <div class="checkbox-wrapper">
-                                <i class="fas fa-check" v-if="mod.visible"></i>
-                            </div>
-                            
-                            <!-- Eye Icon -->
-                            <i class="fas eye-icon" :class="mod.visible ? 'fa-eye' : 'fa-eye-slash'"></i>
-                            
-                            <!-- Text -->
-                            <span :style="{ color: mod.visible ? '#52c41a' : '#999' }">{{ mod.visible ? '显示' : '隐藏' }}</span>
+
+                        <div class="module-list-enhanced">
+                             <div 
+                                 v-for="(mod, index) in allModules" 
+                                 :key="mod.id" 
+                                 class="module-item-enhanced"
+                                 :class="{ 'dragging': draggedIndex === index, 'drag-over': dragOverIndex === index }"
+                                 :draggable="!mod.locked"
+                                 @dragstart="onDragStart($event, index)"
+                                 @dragenter="onDragEnter($event, index)"
+                                 @dragover.prevent
+                                 @drop="onDrop($event, index)"
+                                 @dragend="onDragEnd"
+                             >
+                                 <div class="module-info">
+                                     <i class="fas fa-bars drag-handle" :style="{ cursor: mod.locked ? 'not-allowed' : 'grab', opacity: mod.locked ? 0.3 : 1 }"></i>
+                                     <div class="module-icon"><i :class="mod.icon"></i></div>
+                                     <div style="font-weight: bold; color: #333;">{{ mod.name }}</div>
+                                 </div>
+                                 <div class="module-toggle" :class="mod.visible ? 'active' : 'inactive'" @click="toggleModuleVisibility(index)">
+                                     <!-- Checkbox -->
+                                     <div class="checkbox-wrapper">
+                                         <i class="fas fa-check" v-if="mod.visible"></i>
+                                     </div>
+                                     
+                                     <!-- Eye Icon -->
+                                     <i class="fas eye-icon" :class="mod.visible ? 'fa-eye' : 'fa-eye-slash'"></i>
+                                     
+                                     <!-- Text -->
+                                     <span :style="{ color: mod.visible ? '#52c41a' : '#999' }">{{ mod.visible ? '显示' : '隐藏' }}</span>
+                                 </div>
+                             </div>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Basic Info Config -->
+                    <div v-else-if="currentConfigTab === 'basic'" style="padding: 10px;">
+                        <div class="config-item">
+                            <div class="config-label">
+                                <span style="font-weight: normal; font-family: serif; font-size: 16px;">Tr</span> 姓名字体大小 <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div class="input-wrapper select-wrapper">
+                                <select v-model="globalConfig.nameSize">
+                                    <option value="18px">18px</option>
+                                    <option value="20px">20px</option>
+                                    <option value="22px">22px</option>
+                                    <option value="24px">24px</option>
+                                    <option value="26px">26px</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="config-item">
+                            <div class="config-label">
+                                <i class="far fa-user"></i> 头像缩放倍率 <i class="far fa-question-circle info-icon"></i>
+                            </div>
+                            <div class="input-wrapper select-wrapper">
+                                <select v-model="globalConfig.avatarScale">
+                                    <option value="0.8">0.8</option>
+                                    <option value="0.9">0.9</option>
+                                    <option value="1">1</option>
+                                    <option value="1.1">1.1</option>
+                                    <option value="1.2">1.2</option>
+                                    <option value="1.3">1.3</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                 <!-- Placeholder for other modules -->
+                 <div v-else style="padding: 40px; text-align: center; color: #999;">
+                     <i class="fas fa-tools" style="font-size: 24px; margin-bottom: 10px;"></i>
+                     <div style="font-size: 14px;">该模块暂无更多高级配置项</div>
+                 </div>
                 </div>
 
                 <div class="modal-footer">
@@ -1383,6 +1922,9 @@
                     location: '上海市',
                     avatar: '', 
                     summary: '- 熟练掌握 C++，熟悉面向对象编程。\n- 了解常用设计模式和数据结构。\n- 熟悉 Linux 开发环境。',
+                    awards: '- 蓝桥杯C/C++国家三等奖\n- ACM区域赛铜牌\n- CET-4 CET-6',
+                    personalSummary: '* 有快速学习的能力\n* 对目前的工作有极大的兴趣\n* 英语流利',
+                    research: '',
                     experience: [
                         { company: '某科技公司', position: '前端开发', duration: '2021-2023', description: '负责公司官网开发，使用 Vue3。' }
                     ],
@@ -1409,6 +1951,34 @@
                 const compiledMarkdown = computed(() => {
                     if (!resume.value.summary) return '<p style="color:#999">暂无内容，请在下方编辑...</p>';
                     return renderMarkdown(resume.value.summary);
+                })
+
+                const compiledAwards = computed(() => {
+                    if (!resume.value.awards) return '<p style="color:#999">暂无内容，请在下方编辑...</p>';
+                    return renderMarkdown(resume.value.awards);
+                })
+
+                const compiledPersonalSummary = computed(() => {
+                    if (!resume.value.personalSummary) return '<span style="color:#ccc; font-style: italic;">尚未填写个人评价</span>';
+                    return renderMarkdown(resume.value.personalSummary);
+                })
+
+                const compiledResearch = computed(() => {
+                    if (!resume.value.research) return '<span style="color:#ccc; font-style: italic;">尚未填写科研成果</span>';
+                    return renderMarkdown(resume.value.research);
+                })
+
+                const previewStyles = computed(() => {
+                    return {
+                        '--theme-color': globalConfig.value.themeColor,
+                        '--heading-size': globalConfig.value.headingSize,
+                        '--content-size': globalConfig.value.contentSize,
+                        '--module-spacing': globalConfig.value.moduleSpacing + 'px',
+                        '--line-height': globalConfig.value.lineHeight,
+                        '--name-size': globalConfig.value.nameSize,
+                        '--avatar-scale': globalConfig.value.avatarScale,
+                        'font-family': globalConfig.value.template === 'classic' ? '"Times New Roman", Times, serif' : "'Helvetica Neue', Arial, sans-serif"
+                    }
                 })
 
                 // 通用插入文本函数
@@ -1545,6 +2115,19 @@
                 
                 // 模块配置升级
                 const showConfigModal = ref(false)
+                const showAddModuleModal = ref(false)
+                const newModuleTitle = ref('')
+                const currentConfigTab = ref('global')
+                const globalConfig = ref({
+                    template: 'modern',
+                    themeColor: '#1890ff',
+                    headingSize: '16px',
+                    contentSize: '14px',
+                    moduleSpacing: 24,
+                    lineHeight: 1.5,
+                    nameSize: '24px',
+                    avatarScale: '1'
+                })
                 
                 // 定义所有可用模块及其元数据
                 const allModules = ref([
@@ -1555,9 +2138,40 @@
                     { id: 'projects', name: '项目经历', icon: 'fas fa-project-diagram', visible: true },
                     { id: 'skills', name: '专业技能', icon: 'fas fa-check-square', visible: true },
                     { id: 'awards', name: '获奖经历', icon: 'fas fa-trophy', visible: true },
-                    { id: 'summary', name: '个人评价', icon: 'fas fa-user-edit', visible: false }
+                    { id: 'summary', name: '个人评价', icon: 'fas fa-user-edit', visible: true },
+                    { id: 'research', name: '科研成果', icon: 'fas fa-flask', visible: true }
                 ])
                 
+                const addNewModule = () => {
+                    if (!newModuleTitle.value.trim()) {
+                        alert('请输入模块标题');
+                        return;
+                    }
+                    
+                    const newId = 'custom_' + Date.now();
+                    const newModule = { 
+                        id: newId, 
+                        name: newModuleTitle.value, 
+                        icon: 'fas fa-pen-square', // Default icon for custom modules
+                        visible: true,
+                        isCustom: true // Mark as custom
+                    };
+                    
+                    // Add to module list
+                    allModules.value.push(newModule);
+                    
+                    // Initialize data storage for this module
+                    // We'll store it in a generic 'customModules' object in resume if needed, 
+                    // or just dynamic property on resume object
+                    resume.value[newId] = ''; 
+                    
+                    newModuleTitle.value = '';
+                    showAddModuleModal.value = false;
+                    
+                    // Switch to the new tab
+                    currentTab.value = newId;
+                }
+
                 // 计算当前显示的模块顺序（不包括基本信息，因为基本信息位置固定）
                 const moduleOrder = computed(() => {
                     return allModules.value
@@ -1693,7 +2307,9 @@
                     const data = {
                         resume: resume.value,
                         // 保存所有模块的完整状态（包括顺序和可见性）
-                        allModules: allModules.value
+                        allModules: allModules.value,
+                        // 保存全局配置
+                        globalConfig: globalConfig.value
                     }
                     localStorage.setItem('my_resume', JSON.stringify(data))
                     saveTime.value = new Date().toLocaleString()
@@ -1766,6 +2382,10 @@
                                     // 迁移逻辑：如果只有旧的 moduleOrder，尝试恢复到 allModules
                                     // 这里简单处理，主要依赖默认值
                                 }
+                                
+                                if (parsed.globalConfig) {
+                                    globalConfig.value = { ...globalConfig.value, ...parsed.globalConfig }
+                                }
                             } else {
                                 resume.value = parsed
                             }
@@ -1802,9 +2422,18 @@
                     currentTab,
                     saveTime,
                     compiledMarkdown,
+                    compiledAwards,
+                    compiledPersonalSummary,
+                    compiledResearch,
+                    previewStyles,
                     insertText,
                     renderMarkdown,
                     showConfigModal,
+                    showAddModuleModal,
+                    newModuleTitle,
+                    addNewModule,
+                    currentConfigTab,
+                    globalConfig,
                     allModules,
                     moduleOrder,
                     openConfigModal,
