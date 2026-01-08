@@ -2,6 +2,13 @@
 
 这是一个基于 Vue.js (前端) 和 Django (后端) 的现代化个人简历生成器。支持所见即所得的编辑体验、高度自定义的模块管理、响应式布局以及高质量的 PDF 导出功能。
 
+## 📸 界面预览
+
+| 编辑界面 | 实时预览 |
+| --- | --- |
+| <img src="https://placehold.co/800x600/f0f0f0/333333?text=Editor+Interface" alt="简历编辑器界面" width="400"/> | <img src="https://placehold.co/800x600/e0e0e0/333333?text=Resume+Preview" alt="简历实时预览界面" width="400"/> |
+
+> **提示**：为了展示真实效果，请将您的界面截图保存到 `assets/` 目录下，分别命名为 `editor.png` 和 `preview.png`，并将上方图片链接修改为 `assets/editor.png` 和 `assets/preview.png`。
 
 ## ✨ 核心特性
 

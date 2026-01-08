@@ -17,6 +17,15 @@
         }
     </script>
     <style>
+        /* A4 Metric Reference */
+        #a4-reference {
+            width: 210mm;
+            height: 297mm;
+            position: absolute;
+            top: -9999px;
+            visibility: hidden;
+        }
+
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 0; height: 100vh; overflow-x: auto; overflow-y: hidden; display: flex; flex-direction: column; min-height: 600px; }
         
         /* Top Navigation Bar */
@@ -150,13 +159,72 @@
         .resume-paper {
             width: 210mm;
             min-height: 297mm;
-            background: white;
+            background: white; /* Default to white */
             padding: 40px; /* 页边距 */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Default shadow */
             box-sizing: border-box;
+            position: relative;
         }
         
-        /* Bottom Bars */
+        /* Pagination Active State */
+        .resume-paper.show-pagination {
+            background-color: transparent; /* Transparent for gradient gaps */
+            box-shadow: none; /* Remove box shadow, use filter instead */
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
+        }
+
+        /* Pagination Styles */
+        .new-page-start {
+            position: relative;
+        }
+        
+        /* Pagination Footer (Page Number) */
+        .new-page-start::before {
+            display: none; /* Hide page number */
+        }
+
+        /* Visual Gap - Hidden (handled by transparent paper) */
+        .new-page-start::after {
+            display: none;
+        }
+
+        /* Hide pagination effects during export and force native breaks */
+        body.exporting .new-page-start::before,
+        body.exporting .new-page-start::after {
+            display: none !important;
+        }
+        
+        body.exporting .print-spacer {
+            height: 60px !important; /* Fixed top margin on new page in PDF */
+            page-break-before: always;
+            break-before: page;
+            display: block !important; /* Ensure block display to suppress list markers on LIs */
+            list-style: none !important; /* Double safety */
+            visibility: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+        }
+
+        body.exporting .new-page-start {
+            /* Clean up old styles */
+            margin-top: 0 !important;
+            border-top: none !important;
+            padding-top: 0 !important;
+        }
+
+        /* 导出 PDF 样式 */
+        /* body.exporting .main-wrapper { display: none; } - Removed to fix html2canvas rendering */
+        body.exporting .resume-paper {
+            margin: 0;
+            box-shadow: none;
+            filter: none;
+            background-image: none !important;
+            background-color: white !important;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20px; /* 导出时边距 */
+        }
         .editor-bottom {
             padding: 15px 20px;
             border-top: 1px solid #eee;
@@ -252,6 +320,14 @@
             line-height: var(--line-height);
             color: #333;
         }
+        .resume-desc ul {
+            padding-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+        .resume-desc li {
+            margin-bottom: 2px;
+        }
         .resume-header h1 {
             font-size: var(--name-size); /* Dynamic name size */
             margin-bottom: 10px;
@@ -311,7 +387,7 @@
         }
 
         /* 导出 PDF 样式 */
-        body.exporting .main-wrapper { display: none; }
+        /* body.exporting .main-wrapper { display: none; } - Removed to fix html2canvas rendering */
         body.exporting .resume-paper {
             margin: 0;
             box-shadow: none;
@@ -844,6 +920,7 @@
 <body>
     {% verbatim %}
     <div id="app" class="main-wrapper">
+        <div id="a4-reference"></div>
         <!-- Editor Panel -->
         <div class="editor-panel">
             <div class="editor-header-row">
@@ -1562,11 +1639,14 @@
         <div class="preview-panel">
             <div class="preview-header">
                 <div class="preview-title">简历预览</div>
-                <div style="font-size: 13px; color: #666; cursor: pointer;">分页视图 <i class="fas fa-chevron-down"></i></div>
+                <div style="font-size: 13px; color: #666; cursor: pointer;" @click="showPagination = !showPagination">
+                    分页视图 
+                    <i class="fas" :class="showPagination ? 'fa-check-square' : 'fa-square'"></i>
+                </div>
             </div>
             
             <div class="preview-scroll-area">
-                <div class="resume-paper" id="resume-preview" :class="'template-' + globalConfig.template" :style="previewStyles">
+                <div class="resume-paper" id="resume-preview" :class="['template-' + globalConfig.template, { 'show-pagination': showPagination }]" :style="previewStyles">
                     <!-- Resume Header -->
                     <div class="resume-header">
                         <div style="display: flex; align-items: center; justify-content: center; flex-direction: column;">
@@ -1669,7 +1749,10 @@
                                     <span>{{ edu.school }}</span>
                                     <span style="color: #666; font-weight: normal;">{{ edu.year }}</span>
                                 </div>
-                                <div class="resume-item-subtitle">{{ edu.degree }}</div>
+                                <div class="resume-item-subtitle">
+                                    {{ edu.degree }} 
+                                    <span v-if="edu.major" style="margin-left: 10px; color: #666;">| {{ edu.major }}</span>
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -1901,11 +1984,12 @@
     </div>
 
     <script>
-        const { createApp, ref, onMounted, computed } = Vue
+        const { createApp, ref, onMounted, onUpdated, computed, nextTick, watch } = Vue
 
         createApp({
             setup() {
                 const isDownloading = ref(false)
+                const showPagination = ref(true)
                 const currentTab = ref('basic')
                 const saveTime = ref('')
                 const resume = ref({
@@ -2338,6 +2422,10 @@
                     // 获取预览元素
                     const element = document.getElementById('resume-preview');
                     
+                    // 临时移除高度限制，避免 GAP 高度导致的多余空白页
+                    const originalMinHeight = element.style.minHeight;
+                    element.style.minHeight = 'initial';
+                    
                     const opt = {
                         margin:       0, // 页面样式中已包含 padding
                         filename:     (resume.value.name || '简历') + '.pdf',
@@ -2347,7 +2435,8 @@
                             useCORS: true, 
                             scrollY: 0 
                         },
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                        pagebreak:    { mode: ['css', 'legacy'] }
                     };
                     
                     // 延迟执行以等待样式应用和重绘
@@ -2355,11 +2444,13 @@
                         html2pdf().set(opt).from(element).save()
                             .then(() => {
                                 document.body.classList.remove('exporting');
+                                element.style.minHeight = originalMinHeight; // 恢复高度
                                 isDownloading.value = false;
                             })
                             .catch(err => {
                                 console.error(err);
                                 document.body.classList.remove('exporting');
+                                element.style.minHeight = originalMinHeight; // 恢复高度
                                 alert('PDF 生成失败：' + err.message);
                                 isDownloading.value = false;
                             });
@@ -2390,7 +2481,206 @@
                             }
                         } catch(e) {}
                     }
+                    
+                    // Initial pagination calc
+                    setTimeout(calculatePagination, 1000);
                 })
+
+                onUpdated(() => {
+                    // Re-calculate on update (debounced?)
+                    // For now, simple nextTick
+                    nextTick(() => {
+                        calculatePagination()
+                    })
+                })
+                
+                watch(showPagination, () => {
+                    nextTick(calculatePagination)
+                })
+
+                const calculatePagination = () => {
+                    const paper = document.getElementById('resume-preview');
+                    if (!paper) return;
+
+                    // If downloading, preserve the current pagination state (don't clear it!)
+                    // html2pdf needs the .new-page-start classes to know where to break.
+                    if (isDownloading.value) return;
+
+                    if (!showPagination.value) {
+                        // Clear all pagination
+                        const splitters = paper.querySelectorAll('.new-page-start');
+                        splitters.forEach(el => {
+                            el.classList.remove('new-page-start');
+                            el.style.marginTop = '';
+                            el.removeAttribute('data-page-num');
+                            el.removeAttribute('data-total-pages');
+                        });
+                        
+                        // Reset visual styles
+                        paper.style.backgroundImage = '';
+                        paper.style.minHeight = '';
+                        paper.style.backgroundColor = ''; 
+                        return;
+                    }
+
+                    const reference = document.getElementById('a4-reference');
+                    if (!reference) return;
+
+                    // 1. Reset
+                    const splitters = paper.querySelectorAll('.new-page-start');
+                    splitters.forEach(el => {
+                        el.classList.remove('new-page-start');
+                        el.style.marginTop = '';
+                        el.removeAttribute('data-page-num');
+                        el.removeAttribute('data-total-pages');
+                    });
+                    
+                    // Remove all existing spacers
+                    const existingSpacers = paper.querySelectorAll('.print-spacer');
+                    existingSpacers.forEach(el => el.remove());
+
+                    // 2. Constants
+                    const PAGE_HEIGHT = reference.getBoundingClientRect().height; 
+                    const CONTENT_PADDING_TOP = 60; 
+                    const CONTENT_PADDING_BOTTOM = PAGE_HEIGHT * 0.025; // Reduced to 2.5% of page height
+                    const GAP_HEIGHT = 50; 
+                    
+                    const paperTop = paper.getBoundingClientRect().top;
+
+                    let currentLimit = PAGE_HEIGHT - CONTENT_PADDING_BOTTOM;
+                    let pageCount = 1;
+                    let breakElements = [];
+                    
+                    // 3. Iterate candidates
+                    // Granular selection for continuous text flow
+                    const candidatesSelector = `
+                        .resume-header, 
+                        .resume-section h3, 
+                        .resume-item-header, 
+                        .resume-item-subtitle, 
+                        .resume-desc p, 
+                        .resume-desc li, 
+                        .resume-desc h4, 
+                        .resume-desc h5, 
+                        .resume-desc blockquote, 
+                        .resume-desc pre,
+                        .resume-desc table
+                    `;
+                    
+                    const items = Array.from(paper.querySelectorAll(candidatesSelector));
+                    
+                    // Filter out items that are not visible or inside hidden containers? 
+                    // querySelectorAll returns all matches. 
+                    // We assume styles don't hide them unless module is hidden (which removes it from DOM).
+                    
+                    const headerTypes = ['H3', 'RESUME-ITEM-HEADER', 'RESUME-ITEM-SUBTITLE'];
+                    
+                    // Helper to check if element is a header type
+                    const isHeader = (el) => {
+                        if (!el) return false;
+                        if (headerTypes.includes(el.tagName)) return true;
+                        if (el.classList.contains('resume-item-header')) return true;
+                        if (el.classList.contains('resume-item-subtitle')) return true;
+                        return false;
+                    };
+
+                    for (let i = 0; i < items.length; i++) {
+                        const el = items[i];
+                        if (!el) continue;
+                        
+                        // Skip empty elements (like empty paragraphs from markdown) to prevent ghost pages
+                        // Exception: elements with images or specific classes that might be visually relevant without text
+                        if (!isHeader(el) && 
+                            el.tagName !== 'HR' && 
+                            !el.querySelector('img, svg, iframe') && 
+                            el.textContent.trim().length === 0) {
+                             continue;
+                        }
+                        
+                        const rect = el.getBoundingClientRect();
+                        const elHeight = rect.height;
+                        const elTop = rect.top - paperTop;
+                        const elBottom = elTop + elHeight;
+                        
+                        if (elBottom > currentLimit) {
+                            let targetEl = el;
+                            
+                            // Recursive Orphan Protection REMOVED per user request
+                            // (Previously moved headers to next page if content crossed line, causing large gaps)
+
+
+                            // Re-calculate top for the target element
+                            const targetRect = targetEl.getBoundingClientRect();
+                            const targetTop = targetRect.top - paperTop;
+
+                            const pushDist = (currentLimit + CONTENT_PADDING_BOTTOM + GAP_HEIGHT + CONTENT_PADDING_TOP) - targetTop;
+                            
+                            // Create a spacer element instead of modifying targetEl directly
+                             // This solves the issue where list markers (bullets) get separated from text
+                             let spacer;
+                             if (targetEl.tagName === 'LI') {
+                                 spacer = document.createElement('li');
+                                 // list-style: none might not be enough, display: block ensures no marker is generated
+                                 spacer.style.display = 'block'; 
+                                 spacer.style.listStyle = 'none';
+                             } else {
+                                 spacer = document.createElement('div');
+                                 spacer.style.display = 'block';
+                             }
+                             
+                             spacer.className = 'print-spacer new-page-start'; // Add new-page-start to spacer for page numbering
+                             
+                             // We use fixed 60px height for the margin, as controlled by CSS .print-spacer
+                             // But we can set it here too to be safe, or leave it to CSS.
+                             // The pushDist calculation is legacy for the JS-only approach, 
+                             // but we still need to track currentLimit correctly.
+                             
+                             // spacer.style.height is handled by CSS class .print-spacer (60px)
+                             // For PREVIEW, we need to explicitly set the height to create the visual gap
+                             spacer.style.height = `${Math.max(0, pushDist)}px`;
+                             
+                             // Insert spacer before target element
+                             targetEl.parentNode.insertBefore(spacer, targetEl);
+                             
+                             // Store spacer reference for page numbering (kept for internal logic even if hidden)
+                             spacer.setAttribute('data-page-num', pageCount);
+                             breakElements.push(spacer);
+                            
+                            pageCount++;
+                            currentLimit += (GAP_HEIGHT + PAGE_HEIGHT);
+                        }
+                    }
+
+                    // Update total pages
+                    // Total pages is pageCount (since pageCount starts at 1, and increments after each break. 
+                    // If we have 1 break, we have 2 pages. pageCount becomes 2 after the break. So total is 2.
+                    // Wait, if loop finishes with pageCount=2, it means we are on Page 2.
+                    // So total pages is pageCount.
+                    
+                    breakElements.forEach(el => {
+                        el.setAttribute('data-total-pages', pageCount);
+                    });
+
+                    // Ensure the last page is a full A4 page visually
+                    const totalHeight = pageCount * PAGE_HEIGHT + (pageCount - 1) * GAP_HEIGHT;
+                    paper.style.minHeight = `${totalHeight}px`;
+
+                    // Generate background gradient for visual pages
+                    let stops = [];
+                    let curr = 0;
+                    for(let i=0; i<pageCount; i++) {
+                        // White block
+                        stops.push(`white ${curr}px`);
+                        stops.push(`white ${curr + PAGE_HEIGHT}px`);
+                        // Gap (transparent)
+                        if(i < pageCount - 1) {
+                            stops.push(`transparent ${curr + PAGE_HEIGHT}px`);
+                            stops.push(`transparent ${curr + PAGE_HEIGHT + GAP_HEIGHT}px`);
+                            curr += (PAGE_HEIGHT + GAP_HEIGHT);
+                        }
+                    }
+                    paper.style.backgroundImage = `linear-gradient(to bottom, ${stops.join(', ')})`;
+                }
 
                 return {
                     resume,
@@ -2418,7 +2708,9 @@
                     saveResume,
                     downloadPDF,
                     isDownloading,
+                    showPagination,
                     currentTab,
+                    calculatePagination,
                     saveTime,
                     compiledMarkdown,
                     compiledAwards,
