@@ -459,6 +459,58 @@
             appearance: none;
         }
         .input-wrapper input:focus, .input-wrapper select:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,0.2); outline: none; }
+        .month-range { display: flex; align-items: center; gap: 8px; }
+        .month-range > .month-picker,
+        .month-range > .input-wrapper { flex: 1; min-width: 0; }
+        .month-picker { position: relative; }
+        .month-picker button { font: inherit; cursor: pointer; }
+        .month-picker button:focus-visible { outline: 2px solid #1677ff; outline-offset: 2px; }
+        .month-trigger {
+            display: flex; align-items: center; justify-content: space-between; gap: 6px;
+            width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid #d9dfe8;
+            border-radius: 7px; background: white; color: #344054; font-variant-numeric: tabular-nums;
+            transition: border-color .15s, background-color .15s;
+        }
+        .month-trigger:hover, .month-trigger[aria-expanded="true"] {
+            border-color: #84baff; background: #f7fbff;
+        }
+        .month-trigger i { position: static; transform: none; font-size: 13px; color: #667085; }
+        .month-panel {
+            position: absolute; top: calc(100% + 6px); left: 0; z-index: 10;
+            box-sizing: border-box; width: min(280px, 82vw); padding: 10px;
+            background: white; color: #344054; border: 1px solid #e4e9f1; border-radius: 10px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, .14);
+        }
+        .month-panel-heading {
+            display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px;
+            align-items: center; gap: 4px; margin-bottom: 8px; text-align: center;
+            min-height: 30px; font-size: 13px; font-weight: 600; white-space: nowrap;
+        }
+        .month-back { grid-column: 1; }
+        .month-panel-heading span { grid-column: 2; }
+        .month-clear { grid-column: 3; }
+        .month-range > .month-picker:last-child:not(:first-child) .month-panel,
+        .month-range > .input-wrapper:last-child:not(:first-child) .month-panel { left: auto; right: 0; }
+        .month-grid { display: grid; gap: 4px; grid-auto-rows: 34px; }
+        .year-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr)); height: 110px;
+            overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; overscroll-behavior: contain;
+        }
+        .month-grid-months { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .month-grid button, .month-panel-heading button {
+            border: 0; border-radius: 6px; padding: 0 4px; min-width: 0; min-height: 30px;
+            background: transparent; color: inherit; font-size: 13px;
+            transition: background-color .15s, color .15s;
+        }
+        .month-grid button:hover, .month-panel-heading button:hover { background: #edf5ff; color: #0958b8; }
+        .month-grid button[aria-pressed="true"] { background: #e4efff; color: #0958b8; font-weight: 600; }
+        .month-pop-enter-active, .month-pop-leave-active { transition: opacity .15s, transform .15s; }
+        .month-pop-enter-from, .month-pop-leave-to { opacity: 0; transform: translateY(-4px); }
+        .month-grid-step { animation: month-fade .15s ease-out; }
+        @keyframes month-fade { from { opacity: .45; } to { opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) {
+            .month-picker *, .month-pop-enter-active, .month-pop-leave-active { animation: none; transition: none; }
+        }
         .input-wrapper.select-wrapper::after {
             content: '\f078';
             font-family: 'Font Awesome 5 Free';
@@ -915,6 +967,113 @@
             justify-content: flex-end;
             flex-shrink: 0;
         }
+
+        /* Editor workspace */
+        :root {
+            --ui-bg: #edf2f8;
+            --ui-surface: #fff;
+            --ui-line: #e0e7f0;
+            --ui-text: #17243a;
+            --ui-muted: #52627a;
+            --ui-accent: #245cd1;
+            --ui-tint: #eaf1ff;
+            --ui-radius: 14px;
+        }
+        body {
+            font-family: Inter, system-ui, "Microsoft YaHei", sans-serif;
+            background: var(--ui-bg); color: var(--ui-text); min-height: 0;
+            height: 100dvh; overflow: hidden;
+        }
+        .main-wrapper {
+            display: grid; grid-template-columns: minmax(340px, 5fr) minmax(0, 6fr);
+            min-width: 0; min-height: 0; height: auto; padding: 14px; gap: 14px;
+            background: var(--ui-bg);
+        }
+        .editor-panel, .preview-panel {
+            min-width: 0; height: auto; border: 1px solid var(--ui-line);
+            border-radius: var(--ui-radius); overflow: hidden;
+            background: var(--ui-surface); box-shadow: 0 4px 16px rgba(26, 46, 77, .05);
+        }
+        .editor-header-row, .preview-header {
+            padding: 14px 18px; gap: 12px; min-height: 38px; flex-shrink: 0;
+            border-bottom: 1px solid var(--ui-line);
+        }
+        .editor-title, .preview-title {
+            color: var(--ui-text); font-size: 17px; font-weight: 700; white-space: nowrap;
+        }
+        .editor-actions { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .editor-actions button, .preview-toggle {
+            background: transparent; border: 1px solid transparent; color: var(--ui-muted);
+            border-radius: 7px; padding: 7px 8px; font: inherit; font-size: 13px;
+            cursor: pointer; white-space: nowrap;
+        }
+        .editor-actions button:hover, .preview-toggle:hover, .preview-toggle[aria-pressed="true"] {
+            background: var(--ui-tint); color: var(--ui-accent);
+        }
+        .tabs {
+            margin: 0; padding: 9px 16px; gap: 4px; flex-wrap: wrap; flex-shrink: 0;
+            border-bottom: 1px solid var(--ui-line); background: #fafcff;
+        }
+        .tab-item {
+            margin: 0; padding: 6px 9px; border: 0; border-radius: 7px;
+            background: transparent; color: var(--ui-muted); font: inherit; font-size: 13px;
+            transition: background-color .15s, color .15s;
+        }
+        .tab-item:hover, .tab-item.active {
+            background: var(--ui-tint); color: var(--ui-accent);
+        }
+        .tab-item.active { font-weight: 650; }
+        .editor-content { min-height: 0; padding: 20px; overscroll-behavior: contain; }
+        .editor-content .module-header { color: var(--ui-text); }
+        .editor-content .module-header i { color: var(--ui-accent); }
+        .editor-content .module-desc { color: var(--ui-muted); }
+        .editor-content .input-wrapper input, .editor-content .input-wrapper select {
+            border-color: var(--ui-line); border-radius: 7px; background-color: #fcfdff;
+            color: var(--ui-text); transition: border-color .15s, box-shadow .15s;
+        }
+        .editor-content .input-wrapper input:focus, .editor-content .input-wrapper select:focus,
+        .editor-container:focus-within {
+            border-color: #7099ee; box-shadow: 0 0 0 3px var(--ui-tint);
+        }
+        .editor-container, .edu-card, .edit-form-card, .skill-preview-card {
+            border-color: var(--ui-line); border-radius: 9px;
+        }
+        .custom-editor-toolbar, .skill-preview-card { background-color: #f5f8fd; }
+        .toolbar-btn { border-radius: 5px; transition: background-color .15s, color .15s; }
+        .toolbar-btn:hover { background: var(--ui-tint); color: var(--ui-accent); }
+        .editor-bottom, .preview-bottom, .modal-footer { border-color: var(--ui-line); }
+        .btn-save, .btn-export, .btn-primary, .btn-outline {
+            min-height: 36px; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: background-color .15s, border-color .15s, box-shadow .15s;
+        }
+        .btn-save, .btn-export, .btn-primary {
+            background: var(--ui-accent); border: 1px solid transparent; color: white;
+        }
+        .btn-save:hover, .btn-export:hover, .btn-primary:hover { background: #194ebc; }
+        .btn-outline { border-color: var(--ui-line); color: var(--ui-muted); }
+        .btn-outline:hover { background: #f4f7fc; }
+        button:disabled { opacity: .58; cursor: wait; }
+        button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+        .preview-scroll-area {
+            display: block; min-height: 0; padding: 22px;
+            overflow: auto; overscroll-behavior: contain; background: #e5ebf3;
+        }
+        .preview-scroll-area > .resume-paper { margin-inline: auto; }
+        .editor-content, .preview-scroll-area { scrollbar-width: thin; scrollbar-color: #aab9cd transparent; }
+        .centered-modal-card { border-radius: var(--ui-radius); }
+        @media (max-width: 760px) {
+            body { height: auto; min-height: 100dvh; overflow-y: auto; }
+            .main-wrapper { grid-template-columns: minmax(0, 1fr); padding: 8px; gap: 8px; }
+            .editor-content { max-height: 63dvh; padding: 14px; }
+            .preview-scroll-area { max-height: 78dvh; padding: 12px; }
+            .editor-header-row, .preview-header { padding: 10px 12px; }
+            .tabs { padding-inline: 8px; }
+            .form-row { gap: 10px; flex-wrap: wrap; }
+            .form-row > .form-col { min-width: min(160px, 100%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #app *, #app *::before, #app *::after { transition-duration: 0s; animation-duration: 0s; scroll-behavior: auto; }
+        }
     </style>
 </head>
 <body>
@@ -926,29 +1085,29 @@
             <div class="editor-header-row">
                 <div class="editor-title">简历编辑器</div>
                 <div class="editor-actions">
-                    <span @click="showAddModuleModal = true"><i class="fas fa-plus"></i> 自定义简历模块</span>
-                    <span @click="openConfigModal"><i class="fas fa-pen"></i> 自定义简历配置</span>
+                    <button type="button" @click="showAddModuleModal = true"><i class="fas fa-plus"></i> 自定义简历模块</button>
+                    <button type="button" @click="openConfigModal"><i class="fas fa-pen"></i> 自定义简历配置</button>
                 </div>
             </div>
             
             <div class="tabs">
-                <div class="tab-item" :class="{ active: currentTab === 'basic' }" @click="currentTab = 'basic'">基本信息</div>
-                <div class="tab-item" :class="{ active: currentTab === 'projects' }" @click="currentTab = 'projects'">项目经历</div>
-                <div class="tab-item" :class="{ active: currentTab === 'skills' }" @click="currentTab = 'skills'">专业技能</div>
-                <div class="tab-item" :class="{ active: currentTab === 'awards' }" @click="currentTab = 'awards'">获奖经历</div>
-                <div class="tab-item" :class="{ active: currentTab === 'summary' }" @click="currentTab = 'summary'">个人评价</div>
-                <div class="tab-item" :class="{ active: currentTab === 'research' }" @click="currentTab = 'research'">科研成果</div>
-                <div class="tab-item" :class="{ active: currentTab === 'experience' }" @click="currentTab = 'experience'">实习经历</div>
-                <div class="tab-item" :class="{ active: currentTab === 'work' }" @click="currentTab = 'work'">工作经历</div>
-                <div class="tab-item" :class="{ active: currentTab === 'education' }" @click="currentTab = 'education'">教育背景</div>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'basic' }" @click="currentTab = 'basic'">基本信息</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'projects' }" @click="currentTab = 'projects'">项目经历</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'skills' }" @click="currentTab = 'skills'">专业技能</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'awards' }" @click="currentTab = 'awards'">获奖经历</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'summary' }" @click="currentTab = 'summary'">个人评价</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'research' }" @click="currentTab = 'research'">科研成果</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'experience' }" @click="currentTab = 'experience'">实习经历</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'work' }" @click="currentTab = 'work'">工作经历</button>
+                <button type="button" class="tab-item" :class="{ active: currentTab === 'education' }" @click="currentTab = 'education'">教育背景</button>
                 <!-- Custom Modules Tabs -->
-                <div class="tab-item" 
+                <button type="button" class="tab-item"
                      v-for="mod in allModules.filter(m => m.isCustom && m.visible)" 
                      :key="mod.id"
                      :class="{ active: currentTab === mod.id }" 
                      @click="currentTab = mod.id">
                     {{ mod.name }}
-                </div>
+                </button>
             </div>
 
             <div class="editor-content">
@@ -1124,14 +1283,13 @@
                         <div class="form-row">
                             <div class="form-col">
                                 <label class="required">项目时间</label>
-                                <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="month-range">
                                     <div class="input-wrapper" style="flex: 1;">
-                                        <input v-model="currentProject.startDate" placeholder="开始时间">
+                                        <month-field v-model="currentProject.startDate" placeholder="开始时间"></month-field>
                                     </div>
-                                    <span style="color: #999;">→</span>
+                                    <span style="color: #999;">-</span>
                                     <div class="input-wrapper" style="flex: 1;">
-                                        <input v-model="currentProject.endDate" placeholder="结束时间 (未结束可不选)">
-                                        <i class="far fa-calendar-alt" style="left: auto; right: 10px;"></i>
+                                        <month-field v-model="currentProject.endDate" placeholder="结束时间 (未结束可不选)"></month-field>
                                     </div>
                                 </div>
                             </div>
@@ -1186,7 +1344,7 @@
                         <div class="skill-preview-title">
                             <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> 获奖经历预览</span>
                         </div>
-                        <div class="resume-desc" v-html="compiledAwards"></div>
+                        <div class="resume-desc" :style="previewStyles" v-html="compiledAwards"></div>
                     </div>
 
                     <!-- Editor -->
@@ -1229,7 +1387,7 @@
                         <div class="skill-preview-title">
                             <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> 个人评价预览</span>
                         </div>
-                        <div class="resume-desc" v-html="compiledPersonalSummary"></div>
+                        <div class="resume-desc" :style="previewStyles" v-html="compiledPersonalSummary"></div>
                     </div>
 
                     <!-- Editor -->
@@ -1272,7 +1430,7 @@
                         <div class="skill-preview-title">
                             <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> 科研成果预览</span>
                         </div>
-                        <div class="resume-desc" v-html="compiledResearch"></div>
+                        <div class="resume-desc" :style="previewStyles" v-html="compiledResearch"></div>
                     </div>
 
                     <!-- Editor -->
@@ -1313,7 +1471,7 @@
                             <span><i class="far fa-eye" style="margin-right: 5px; color: #1890ff;"></i> 实时预览</span>
                             <span style="font-weight: normal; font-size: 12px; color: #999;">支持 Markdown 语法</span>
                         </div>
-                        <div class="resume-desc" v-html="compiledMarkdown"></div>
+                        <div class="resume-desc" :style="previewStyles" v-html="compiledMarkdown"></div>
                     </div>
 
                     <!-- Editor -->
@@ -1358,8 +1516,7 @@
                             </div>
                             <div class="form-col" style="flex: 1;">
                                 <div class="input-wrapper">
-                                    <i class="far fa-calendar-alt"></i>
-                                    <input v-model="job.duration" placeholder="例如：2021.06 - 2022.08">
+                                    <month-field v-model="job.duration" placeholder="例如：2021.06 - 2022.08" range></month-field>
                                 </div>
                             </div>
                         </div>
@@ -1420,8 +1577,7 @@
                             </div>
                             <div class="form-col" style="flex: 1;">
                                 <div class="input-wrapper">
-                                    <i class="far fa-calendar-alt"></i>
-                                    <input v-model="job.duration" placeholder="例如：2021.06 - 2022.08">
+                                    <month-field v-model="job.duration" placeholder="例如：2021.06 - 2022.08" range></month-field>
                                 </div>
                             </div>
                         </div>
@@ -1561,14 +1717,13 @@
                         <div class="form-row">
                             <div class="form-col">
                                 <label class="required">在校时间</label>
-                                <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="month-range">
                                     <div class="input-wrapper" style="flex: 1;">
-                                        <input v-model="currentEducation.startDate" placeholder="起始时间">
+                                        <month-field v-model="currentEducation.startDate" placeholder="起始时间"></month-field>
                                     </div>
-                                    <span style="color: #999;">→</span>
+                                    <span style="color: #999;">-</span>
                                     <div class="input-wrapper" style="flex: 1;">
-                                        <input v-model="currentEducation.endDate" placeholder="结束时间 (在读可不选)">
-                                        <i class="far fa-calendar-alt" style="left: auto; right: 10px;"></i>
+                                        <month-field v-model="currentEducation.endDate" placeholder="结束时间 (在读可不选)"></month-field>
                                     </div>
                                 </div>
                             </div>
@@ -1590,7 +1745,7 @@
                             <div class="skill-preview-title">
                                 <span><i class="far fa-star" style="margin-right: 5px; color: #1890ff;"></i> {{ mod.name }}预览</span>
                             </div>
-                            <div class="resume-desc" v-html="renderMarkdown(resume[mod.id])"></div>
+                            <div class="resume-desc" :style="previewStyles" v-html="renderMarkdown(resume[mod.id])"></div>
                         </div>
 
                         <!-- Editor -->
@@ -1639,10 +1794,10 @@
         <div class="preview-panel">
             <div class="preview-header">
                 <div class="preview-title">简历预览</div>
-                <div style="font-size: 13px; color: #666; cursor: pointer;" @click="showPagination = !showPagination">
+                <button type="button" class="preview-toggle" :aria-pressed="showPagination" @click="showPagination = !showPagination">
                     分页视图 
                     <i class="fas" :class="showPagination ? 'fa-check-square' : 'fa-square'"></i>
-                </div>
+                </button>
             </div>
             
             <div class="preview-scroll-area">
@@ -1698,9 +1853,9 @@
                         </div>
 
                         <!-- Projects (New) -->
-                        <div class="resume-section" v-if="mod === 'projects' && resume.projects && resume.projects.length > 0">
+                        <div class="resume-section" v-if="mod === 'projects' && previewProjects.length > 0">
                             <h3>项目经历</h3>
-                            <div v-for="proj in resume.projects" class="resume-item">
+                            <div v-for="proj in previewProjects" class="resume-item">
                                 <div class="resume-item-header">
                                     <span>{{ proj.name }}</span>
                                     <span style="color: #666; font-weight: normal;">{{ proj.duration }}</span>
@@ -1742,16 +1897,15 @@
                         </div>
 
                         <!-- Education -->
-                        <div class="resume-section" v-if="mod === 'education' && resume.education.length > 0">
+                        <div class="resume-section" v-if="mod === 'education' && previewEducation.length > 0">
                             <h3>教育背景</h3>
-                            <div v-for="edu in resume.education" class="resume-item">
+                            <div v-for="edu in previewEducation" class="resume-item">
                                 <div class="resume-item-header">
                                     <span>{{ edu.school }}</span>
                                     <span style="color: #666; font-weight: normal;">{{ edu.year }}</span>
                                 </div>
                                 <div class="resume-item-subtitle">
-                                    {{ edu.degree }} 
-                                    <span v-if="edu.major" style="margin-left: 10px; color: #666;">| {{ edu.major }}</span>
+                                    {{ [edu.degree, edu.major, edu.level, edu.gpa && 'GPA ' + edu.gpa].filter(Boolean).join(' | ') }}
                                 </div>
                             </div>
                         </div>
@@ -1760,7 +1914,6 @@
             </div>
 
             <div class="preview-bottom">
-                <button class="btn-outline"><i class="fas fa-pencil-alt"></i> 修改简历</button>
                 <button class="btn-export" :disabled="isDownloading" @click="downloadPDF">
                     <i class="fas fa-download"></i> {{ isDownloading ? '生成中...' : '导出 PDF' }}
                 </button>
@@ -1984,9 +2137,88 @@
     </div>
 
     <script>
-        const { createApp, ref, onMounted, onUpdated, computed, nextTick, watch } = Vue
+        const { createApp, ref, onMounted, onUpdated, computed, nextTick } = Vue
 
         createApp({
+            components: {
+                MonthField: {
+                    props: { modelValue: String, placeholder: String, range: Boolean },
+                    emits: ['update:modelValue'],
+                    data() {
+                        return { active: null, year: null }
+                    },
+                    computed: {
+                        years() {
+                            const current = new Date().getFullYear()
+                            return Array.from({ length: current - 2009 }, (_, index) => current - index)
+                        },
+                        dates() {
+                            return this.range ? (this.modelValue || '').split(/\s+-\s+/, 2) : [this.modelValue]
+                        }
+                    },
+                    mounted() {
+                        document.addEventListener('click', this.closeOutside, true)
+                    },
+                    unmounted() {
+                        document.removeEventListener('click', this.closeOutside, true)
+                    },
+                    methods: {
+                        closeOutside(event) {
+                            if (!event.composedPath().includes(this.$el)) this.active = null
+                        },
+                        toggle(index) {
+                            this.active = this.active === index ? null : index
+                            this.year = null
+                        },
+                        selectMonth(month) {
+                            this.updateDate(this.year + '.' + String(month).padStart(2, '0'))
+                        },
+                        updateDate(date) {
+                            let value = date
+                            if (this.range) {
+                                const [start = '', end = ''] = this.dates
+                                const dates = this.active === 0 ? [date, end] : [start, date]
+                                value = dates[1] ? dates.join(' - ') : dates[0]
+                            }
+                            this.$emit('update:modelValue', value)
+                            this.active = null
+                        }
+                    },
+                    template: `
+                        <div class="month-range" @keydown.esc.stop="active = null">
+                            <template v-for="(label, index) in (range ? ['起始时间', '结束时间'] : [placeholder])" :key="index">
+                                <span v-if="index === 1" aria-hidden="true">-</span>
+                                <div class="month-picker">
+                                    <button type="button" class="month-trigger" :aria-label="label"
+                                        :aria-expanded="active === index" @click="toggle(index)">
+                                        <span>{{ dates[index] || label }}</span>
+                                        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                                    </button>
+                                    <transition name="month-pop">
+                                    <div v-if="active === index" class="month-panel">
+                                        <div class="month-panel-heading">
+                                            <button v-if="year" type="button" class="month-back" @click="year = null">返回</button>
+                                            <span>{{ year ? year + ' 年 · 选月份' : '选择年份' }}</span>
+                                            <button v-if="dates[index]" type="button" class="month-clear" @click="updateDate('')">清除</button>
+                                        </div>
+                                        <div v-if="!year" class="month-grid year-grid month-grid-step" tabindex="0" aria-label="年份列表">
+                                            <button v-for="option in years" :key="option" type="button" class="btn-outline"
+                                                :aria-pressed="Number((dates[index] || '').slice(0, 4)) === option"
+                                                @click="year = option">{{ option }}</button>
+                                        </div>
+                                        <div v-else class="month-grid month-grid-months month-grid-step">
+                                            <button v-for="month in 12" :key="month" type="button" class="btn-outline"
+                                                 :aria-pressed="year + '.' + String(month).padStart(2, '0') === dates[index]"
+                                                @click="selectMonth(month)">{{ month }}月</button>
+                                        </div>
+                                    </div>
+                                    </transition>
+                                </div>
+                            </template>
+                        </div>
+                    `
+                }
+            },
             setup() {
                 const isDownloading = ref(false)
                 const showPagination = ref(true)
@@ -2025,9 +2257,10 @@
                 const renderMarkdown = (text) => {
                     if (!text) return '';
                     if (typeof marked !== 'undefined') {
-                        return marked.parse(text);
+                        return marked.parse(text, { gfm: true, breaks: true });
                     }
-                    return text.replace(/\n/g, '<br>').replace(/- /g, '• ');
+                    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return escaped.split(/\r\n?|\n/).map(line => '<p>' + (line || '<br>') + '</p>').join('');
                 }
 
                 // 简单的 Markdown 渲染 (保留 computed 以兼容旧代码，或直接在模板中使用 renderMarkdown)
@@ -2133,6 +2366,28 @@
                 const editingProjectIndex = ref(-1)
                 const currentProject = ref({ name: '', role: '', startDate: '', endDate: '', description: '' })
 
+                const formatDateRange = ({ startDate, endDate }) => {
+                    if (!startDate) return endDate ? ' - ' + endDate : ''
+                    return startDate + ' - ' + (endDate || '至今')
+                }
+
+                const withDraft = (items, index, draft, fields) => {
+                    if (index >= 0) return items.map((item, i) => i === index ? draft : item)
+                    return fields.some(field => String(draft[field] ?? '').trim()) ? [...items, draft] : items
+                }
+
+                const projectItem = computed(() => ({
+                    ...currentProject.value,
+                    duration: formatDateRange(currentProject.value)
+                }))
+
+                const previewProjects = computed(() => withDraft(
+                    resume.value.projects || [],
+                    editingProjectIndex.value,
+                    projectItem.value,
+                    ['name', 'role', 'duration', 'description']
+                ))
+
                 const resetProjectForm = () => {
                     editingProjectIndex.value = -1
                     currentProject.value = { name: '', role: '', startDate: '', endDate: '', description: '' }
@@ -2159,6 +2414,8 @@
                 const removeProject = (index) => {
                     if(confirm('确定要删除这条项目经历吗？')) {
                         resume.value.projects.splice(index, 1)
+                        if (editingProjectIndex.value === index) resetProjectForm()
+                        else if (editingProjectIndex.value > index) editingProjectIndex.value--
                     }
                 }
 
@@ -2168,19 +2425,8 @@
                         return;
                     }
                     
-                    // 组合时间
-                    let duration = currentProject.value.startDate
-                    if (currentProject.value.endDate) {
-                        duration += ' - ' + currentProject.value.endDate
-                    } else if (currentProject.value.startDate) {
-                         duration += ' - 至今'
-                    }
-                    
-                    const newItem = {
-                        ...currentProject.value,
-                        duration: duration
-                    }
-                    
+                    const newItem = projectItem.value
+
                     if (editingProjectIndex.value === -1) {
                         if (!resume.value.projects) resume.value.projects = []
                         resume.value.projects.push(newItem)
@@ -2196,6 +2442,18 @@
                 const currentEducationIndex = ref(-1)
                 const currentEducation = ref({})
                 
+                const educationItem = computed(() => ({
+                    ...currentEducation.value,
+                    year: formatDateRange(currentEducation.value)
+                }))
+
+                const previewEducation = computed(() => {
+                    const items = resume.value.education || []
+                    if (!editingEducation.value) return items
+                    return withDraft(items, isNewEducation.value ? -1 : currentEducationIndex.value,
+                        educationItem.value, ['school', 'major', 'degree', 'level', 'gpa', 'year'])
+                })
+
                 // 模块配置升级
                 const showConfigModal = ref(false)
                 const showAddModuleModal = ref(false)
@@ -2363,19 +2621,11 @@
                 }
 
                 const saveEducationItem = () => {
-                    // 合并时间
-                    let yearStr = currentEducation.value.startDate
-                    if (currentEducation.value.endDate) {
-                        yearStr += ' - ' + currentEducation.value.endDate
-                    } else if (currentEducation.value.startDate) {
-                         yearStr += ' - 至今'
-                    }
-                    currentEducation.value.year = yearStr
-
                     if (isNewEducation.value) {
-                        resume.value.education.push({ ...currentEducation.value })
+                        if (!resume.value.education) resume.value.education = []
+                        resume.value.education.push(educationItem.value)
                     } else {
-                        resume.value.education[currentEducationIndex.value] = { ...currentEducation.value }
+                        resume.value.education[currentEducationIndex.value] = educationItem.value
                     }
                     editingEducation.value = false
                 }
@@ -2486,16 +2736,10 @@
                     setTimeout(calculatePagination, 1000);
                 })
 
+                let paginationFrame
                 onUpdated(() => {
-                    // Re-calculate on update (debounced?)
-                    // For now, simple nextTick
-                    nextTick(() => {
-                        calculatePagination()
-                    })
-                })
-                
-                watch(showPagination, () => {
-                    nextTick(calculatePagination)
+                    cancelAnimationFrame(paginationFrame)
+                    paginationFrame = requestAnimationFrame(calculatePagination)
                 })
 
                 const calculatePagination = () => {
@@ -2508,6 +2752,7 @@
 
                     if (!showPagination.value) {
                         // Clear all pagination
+                        paper.querySelectorAll('.print-spacer').forEach(el => el.remove());
                         const splitters = paper.querySelectorAll('.new-page-start');
                         splitters.forEach(el => {
                             el.classList.remove('new-page-start');
@@ -2542,7 +2787,7 @@
                     // 2. Constants
                     const PAGE_HEIGHT = reference.getBoundingClientRect().height; 
                     const CONTENT_PADDING_TOP = 60; 
-                    const CONTENT_PADDING_BOTTOM = PAGE_HEIGHT * 0.025; // Reduced to 2.5% of page height
+                    const CONTENT_PADDING_BOTTOM = 10; // Minimal bottom padding (approx 2-3mm)
                     const GAP_HEIGHT = 50; 
                     
                     const paperTop = paper.getBoundingClientRect().top;
@@ -2560,58 +2805,49 @@
                         .resume-item-subtitle, 
                         .resume-desc p, 
                         .resume-desc li, 
+                        .resume-desc h1,
+                        .resume-desc h2,
+                        .resume-desc h3,
                         .resume-desc h4, 
                         .resume-desc h5, 
+                        .resume-desc h6,
                         .resume-desc blockquote, 
                         .resume-desc pre,
                         .resume-desc table
                     `;
                     
-                    const items = Array.from(paper.querySelectorAll(candidatesSelector));
-                    
-                    // Filter out items that are not visible or inside hidden containers? 
-                    // querySelectorAll returns all matches. 
-                    // We assume styles don't hide them unless module is hidden (which removes it from DOM).
-                    
-                    const headerTypes = ['H3', 'RESUME-ITEM-HEADER', 'RESUME-ITEM-SUBTITLE'];
-                    
-                    // Helper to check if element is a header type
-                    const isHeader = (el) => {
-                        if (!el) return false;
-                        if (headerTypes.includes(el.tagName)) return true;
-                        if (el.classList.contains('resume-item-header')) return true;
-                        if (el.classList.contains('resume-item-subtitle')) return true;
-                        return false;
-                    };
+                    const isHeading = el => el.matches(
+                        'h1, h2, h3, h4, h5, h6, .resume-item-header, .resume-item-subtitle'
+                    );
+                    const items = Array.from(paper.querySelectorAll(candidatesSelector)).filter(el =>
+                        el.getClientRects().length > 0 &&
+                        (el.textContent.trim() || el.querySelector('img, svg, iframe')) &&
+                        !el.parentElement.closest(candidatesSelector)
+                    );
 
                     for (let i = 0; i < items.length; i++) {
                         const el = items[i];
-                        if (!el) continue;
-                        
-                        // Skip empty elements (like empty paragraphs from markdown) to prevent ghost pages
-                        // Exception: elements with images or specific classes that might be visually relevant without text
-                        if (!isHeader(el) && 
-                            el.tagName !== 'HR' && 
-                            !el.querySelector('img, svg, iframe') && 
-                            el.textContent.trim().length === 0) {
-                             continue;
-                        }
-                        
                         const rect = el.getBoundingClientRect();
-                        const elHeight = rect.height;
-                        const elTop = rect.top - paperTop;
-                        const elBottom = elTop + elHeight;
-                        
-                        if (elBottom > currentLimit) {
-                            let targetEl = el;
-                            
-                            // Recursive Orphan Protection REMOVED per user request
-                            // (Previously moved headers to next page if content crossed line, causing large gaps)
+                        let requiredBottom = rect.bottom;
+                        if (isHeading(el)) {
+                            const section = el.closest('.resume-section');
+                            let next = i + 1;
+                            while (next < items.length && items[next].closest('.resume-section') === section) {
+                                const following = items[next];
+                                requiredBottom = following.getBoundingClientRect().bottom;
+                                if (!isHeading(following)) break;
+                                next++;
+                            }
+                        }
 
+                        const usableHeight = PAGE_HEIGHT - CONTENT_PADDING_TOP - CONTENT_PADDING_BOTTOM;
+                        if (requiredBottom - rect.top > usableHeight) {
+                            requiredBottom = rect.bottom;
+                        }
 
-                            // Re-calculate top for the target element
-                            const targetRect = targetEl.getBoundingClientRect();
-                            const targetTop = targetRect.top - paperTop;
+                        if (requiredBottom - paperTop > currentLimit && rect.height <= usableHeight) {
+                            const targetEl = el;
+                            const targetTop = rect.top - paperTop;
 
                             const pushDist = (currentLimit + CONTENT_PADDING_BOTTOM + GAP_HEIGHT + CONTENT_PADDING_TOP) - targetTop;
                             
@@ -2693,6 +2929,7 @@
                     removeWorkExperience,
                     editingProjectIndex,
                     currentProject,
+                    previewProjects,
                     resetProjectForm,
                     editProject,
                     removeProject,
@@ -2700,6 +2937,7 @@
                     editingEducation,
                     isNewEducation,
                     currentEducation,
+                    previewEducation,
                     addNewEducation,
                     editEducation,
                     cancelEditEducation,
